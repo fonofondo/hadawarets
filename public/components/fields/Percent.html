@@ -1,0 +1,40 @@
+<template id="snp-percent-input-template">
+    <style>
+        input {
+            border: none;
+            outline: none;
+            padding: 4px;
+            font-size: 1em;
+            width: 100%;
+        }
+    </style>
+    <input class="input" type="number" />
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-percent-input-template");
+
+        class SnpPercentInput extends SnpTextInput {
+            constructor() {
+                super();
+                this.wrap.querySelector(".input").remove()
+                this.wrap.prepend(template.content.cloneNode(true));
+                this.inputElement = this.wrap.querySelector(".input")
+                this.inputElement.setAttribute('min', 1)
+                this.inputElement.setAttribute('max', 100)
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'percent'
+                super.init(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-percent")) {
+            window.customElements.define("snp-input-percent", SnpPercentInput);
+        }
+    })();
+
+</script>

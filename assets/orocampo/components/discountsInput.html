@@ -1,0 +1,167 @@
+
+<!-- discounts input -->
+<template id="snp-orocampo-discounts-input-template">
+    <style>
+        .rel-docs {
+            display: table;
+            border: none;
+            border-collapse: separate;
+        }
+
+        .total-row,
+        .order-header,
+        orocampo-discounts-row {
+            display: table-row;
+        }
+
+        .order-header div {
+            padding: 0.3em;
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+        }
+
+        .total-row div {
+            display: table-cell;
+            padding: 0.3em;
+        }
+
+        .total-row div:nth-child(3) {
+            text-align: right;
+        }
+
+        .total-row div:nth-child(4) {
+            border: 1px solid var(--snp-foreground-alpha2);
+            border-top: none;
+            border-bottom: none;
+        }
+
+        .total-row:last-child div:nth-child(4) {
+            border: 2px solid var(--snp-foreground-alpha4);
+            text-align: right;
+        }
+    </style>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-orocampo-discounts-input-template");
+
+        class SnporocampoDicountsInput extends SnpTextInput {
+            constructor() {
+                super();
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.relDocs = {}
+                this.relRows = {}
+                this.relDocsContainer = document.createElement('div')
+                this.relDocsContainer.classList.add('rel-docs')
+                this.wrap.parentElement.append(this.relDocsContainer)
+
+                document.addEventListener('discountProductDeleted', (e) => {
+                    if (e.detail.order == this) {
+                        Object.keys(this.relDocs).forEach((docKey) => {
+                            if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
+                                delete this.relDocs[docKey]
+                                this.value = {
+                                    docs: this.relDocs
+                                }
+                            }
+                        })
+                    }
+                })
+            }
+
+            get value() {
+
+                Object.keys(this.relDocs).forEach((docKey) => {
+                    const orderRow = this.relRows[docKey]
+                    this.relDocs[docKey].discounted_price = orderRow.value
+                })
+
+                return {
+                    docs: this.relDocs
+                }
+            }
+
+            set value(val) {
+                if (val && typeof val == 'object' && ('docs' in val) && Object.keys(val.docs).length) {
+                    const docs = val.docs
+
+                    if (!('autocomp' in this.passedFieldInfo)) return
+                    this.relDocs = docs
+                    const autocompField = this.passedFieldInfo.autocomp.split('.')[1]
+                    this.relDocsContainer.innerHTML = `
+                        <div class="order-header">
+                            <div>Producto</div>    
+                            <div>Precio<br>Normal</div>
+                            <div>Precio con<br>Descuento</div>
+                            <div></div>
+                        </div>
+                    `
+
+
+                    Object.keys(this.relDocs).forEach((docKey) => {
+                        const orderRow = document.createElement('orocampo-discounts-row')
+                        this.relRows[docKey] = orderRow
+                        orderRow.init(this.relDocs[docKey], this)
+                        this.relDocsContainer.append(orderRow)
+                    })
+
+                    this.inputElement.textContent = ''
+                } else {
+                    this.inputElement.textContent = ''
+                    this.relDocsContainer.innerHTML = ''
+                    this.relDocs = {}
+                }
+            }
+
+            reset() {
+                super.reset()
+                this.inputElement.textContent = ''
+                this.relDocsContainer.innerHTML = ''
+                this.relDocs = {}
+                this.total = 0
+            }
+
+            get textValue() {
+                return Object.keys(this.relDocs).length + ' Productos. Total: ' + (formatMoney(this.total ? this.total : 0))
+            }
+
+            onAutocomp(e) {
+                console.log('onAutocomp', e.detail)
+                const field = e.detail.field
+                const doc = e.detail.doc
+
+                if (this == field) {
+                    if (doc.id in this.relDocs) {
+                        alert('El producto "' + doc.name + '" ya está en la lista')
+                    } else {
+
+                        this.relDocs[doc.id] = doc
+                        this.value = {
+                            docs: this.relDocs
+                        }
+                    }
+
+                }
+            }
+
+            render(fieldInfo) {
+                console.log('fieldInfo', fieldInfo)
+                if(!fieldInfo) fieldInfo = this.fieldInfo
+                fieldInfo.icon = 'list';
+                this.passedFieldInfo = fieldInfo
+                super.render(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-orocampo-discounts")) {
+            window.customElements.define("snp-input-orocampo-discounts", SnporocampoDicountsInput);
+        }
+    })();
+
+</script>

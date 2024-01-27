@@ -1,0 +1,354 @@
+<template id="snp-order-input-template">
+    <style>
+        .rel-docs {
+            display: table;
+            border: none;
+            border-collapse: separate;
+        }
+
+        .total-row,
+        .order-header,
+        snp-input-order-row {
+            display: table-row;
+        }
+
+        .order-header div {
+            padding: 0.3em;
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+        }
+
+        .total-row div {
+            display: table-cell;
+            padding: 0.3em;
+        }
+
+        .total-row div:nth-child(3) {
+            text-align: right;
+        }
+
+        .total-row div:nth-child(4) {
+            border: 1px solid var(--snp-foreground-alpha2);
+            border-top: none;
+            border-bottom: none;
+        }
+
+        .total-row:last-child div:nth-child(4) {
+            border: 2px solid var(--snp-foreground-alpha4);
+            text-align: right;
+        }
+
+        .order-product-input-wrap {
+            margin-bottom: 0.5em;
+        }
+    </style>
+</template>
+
+
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-order-input-template");
+
+        class SnpOrderInput extends SnpTextInput {
+            constructor() {
+                super();
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.relDocs = {}
+                this.relDocsContainer = document.createElement('div')
+                this.relDocsContainer.classList.add('rel-docs')
+                this.wrap.parentElement.append(this.relDocsContainer)
+                this.wrap.classList.add('order-product-input-wrap')
+
+                document.addEventListener('orderProductDeleted', (e) => {
+
+                    if (e.detail.order == this) {
+
+                        Object.keys(this.relDocs).forEach((docKey) => {
+                            if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
+                                delete this.relDocs[docKey]
+                                this._doc[this.fieldInfo.fieldKey] = {
+                                    docs: this.relDocs
+                                }
+                                this.render()
+                            }
+                        })
+                    }
+                })
+
+                document.addEventListener('orderProductQtyChange', (e) => {
+
+                    if (e.detail.order == this) {
+
+                        Object.keys(this.relDocs).forEach((docKey) => {
+                            if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
+
+                                this.relDocs[docKey]._qty = e.detail.qty
+                                this._doc[this.fieldInfo.fieldKey] = {
+                                    docs: this.relDocs
+                                }
+                                this.render()
+                            }
+                        })
+                    }
+                })
+            }
+
+            get value() {
+                return {
+                    total: this.total,
+                    docs: this.relDocs
+                }
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.render()
+            }
+
+            reset() {
+                super.reset()
+                this.inputElement.textContent = ''
+                this.relDocsContainer.innerHTML = ''
+                this.relDocs = {}
+                this.total = 0
+            }
+
+            get textValue() {
+                return Object.keys(this.relDocs).length + ' Productos.' //' Total: ' + (formatMoney(this.total ? this.total : 0))
+            }
+
+            onAutocomp(e) {
+                const field = e.detail.field
+                const doc = e.detail.doc
+
+                if (this == field) {
+                    if (doc.id in this.relDocs) {
+                        alert('El producto "' + doc.name + '" ya está en la lista')
+                    } else {
+                        doc._qty = 1
+                        this.relDocs[doc.id] = doc
+                        this._doc[this.fieldInfo.fieldKey] = {
+                            docs: this.relDocs
+                        }
+                        this.render()
+                    }
+
+                }
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'list';
+                super.init(fieldInfo)
+            }
+
+            async render() {
+                super.render()
+
+                const val = this._doc[this.fieldInfo.fieldKey]
+                if (!val) return;
+                if (('docs' in val) && Object.keys(val.docs).length) {
+                    const docs = val.docs
+
+                    if (!('autocomp' in this.fieldInfo)) return
+                    this.relDocs = docs
+                    const autocompField = this.fieldInfo.autocomp.split('.')[1]
+                    this.relDocsContainer.innerHTML = `
+                        <div class="order-header">
+                            <div>Producto</div>    
+                            <div>Precio<br />Unitario</div>
+                            <div>Cantidad</div>
+                            <div>Subtotal</div>
+                            <div></div>
+                        </div>
+                    `
+
+
+                    var total = 0
+
+                    for (const docKey of Object.keys(this.relDocs)) {
+                        const orderRow = document.createElement('snp-input-order-row')
+                        await orderRow.init(this.relDocs[docKey], this)
+                        total += orderRow.value
+                        this.relDocsContainer.append(orderRow)
+                    }
+
+                    this.total = total
+
+                    //
+                    // const discountRow = document.createElement('div')
+                    // discountRow.classList.add('total-row')
+                    // discountRow.innerHTML = `
+                    //     <div></div>
+                    //     <div></div>
+                    //     <div><strong>Descuento</strong></div>
+                    //     <div><input type="number" min="0" 
+                    //         style="width: 100%;
+                    //         box-sizing: border-box;
+                    //         max-width: 6em;" /></div>
+                    //     <div></div>`;
+
+                    // this.relDocsContainer.appendChild(discountRow)
+
+
+                    //
+                    const totalRow = document.createElement('div')
+                    totalRow.classList.add('total-row')
+                    totalRow.innerHTML = `
+                        <div></div>
+                        <div></div>
+                        <div><strong>TOTAL</strong></div>
+                        <div><strong style="font-size: 1.2em;">${formatMoney(total)}</strong></div>
+                        <div></div>`;
+
+                    this.relDocsContainer.appendChild(totalRow)
+
+                    this.inputElement.textContent = ''
+                } else {
+                    this.inputElement.textContent = ''
+                    this.relDocsContainer.innerHTML = ''
+                    this.relDocs = {}
+                }
+
+                this.inputElement.value = ''
+                
+                this.total = total
+
+                this.setUpPayments()
+            }
+
+            setUpPayments(){
+                if(this.paymentsIsSetup) return
+                this.paymentsIsSetup = true
+
+                const paymentBtnContainer = document.createElement('div')
+
+                paymentBtnContainer.innerHTML += `<div style="text-align: right; margin-top: 1em;">
+                    <button type="button" id="paymenthistory-add" style="font-size: 1.3em;">Agregar Pago</button>
+                </div>`
+
+                this.wrap.parentElement.appendChild(paymentBtnContainer)
+
+                let paidAmount = 0
+                if(this._doc && this._doc.pagos_history){
+                    for(var pago of this._doc.pagos_history){
+                        paidAmount += pago.suma
+                    }
+                }
+                
+
+                setTimeout(()=>{
+                    const paymentBtn = paymentBtnContainer.querySelector('#paymenthistory-add')
+                    
+                    paymentBtn.addEventListener('click', () => {
+                        var paymentTemplate = document.createElement("div");
+
+                        paymentTemplate.innerHTML = `
+                        <style>
+                            .payment-form{
+                                padding: 5em 8em 8em 8em;
+                                background-color: var(--snp-background-color);
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                max-width: 500px;
+                                min-width: 300px;
+                                height: 300px;
+                                transform: translate(-50%, -50%);
+                                z-index: 10000;
+                                border-radius: var(--snp-normal-radius);
+                                display: flex;
+                                flex-direction: column;
+                                box-shadow: 0.5em 0.5em 4em 4px var(--snp-shadow-color);
+                            }
+                            input{
+                                padding: 0.5em;
+                                font-size: 2em;
+                            }
+                            button{
+                                font-size: 1.5em;
+                                padding: 0.5em;
+                            }
+                        </style>
+                        <div class="payment-form form-container">
+                            <div style="
+                                position: absolute;
+                                top: 1em;
+                                right: 1em;
+                                font-size: 2em;
+                                cursor: pointer;
+                            "><i class="fa fa-times closer"></i></div>
+
+                            <div style="
+                                font-size: 2em;
+                                margin-bottom: 1em;
+                                color: var(--snp-primary-shade-color);
+                            ">Ingresar Pago</div>
+
+                            <div style="
+                                font-size: 1.5em;
+                                padding-bottom: 1em;
+                            ">TOTAL: <span id="payment-form-total" style="
+                                font-size: 1.5em;
+                            ">${formatMoney(this.total - paidAmount)}</span></div>
+
+                            Efectivo:
+                            <div><input id="payment-input" /></div>
+                            <br>
+                            Cambio:
+                            <div><input id="saldo-input" readonly /></div>
+                            <br>
+                            <button type="button" id="payment-save-btn">Guardar</button>
+                        </div>
+                        `
+
+                        paymentTemplate.querySelector('.closer').addEventListener('click', () => {
+                            paymentTemplate.remove()
+                            paymentTemplate = null
+                        })
+
+                        const paymentInput = paymentTemplate.querySelector('#payment-input')
+                        const saldoInput = paymentTemplate.querySelector('#saldo-input')
+                        const saveBtn = paymentTemplate.querySelector('#payment-save-btn')
+
+                        paymentInput.addEventListener('keyup', () => {
+                            if(!paymentInput.value) return
+                            const plainNumber = parseInt(paymentInput.value.replace('$', '').replace('.', ''))
+                            paymentInput.value = formatMoney(plainNumber)
+                            saldoInput.value = formatMoney(plainNumber - this.total + paidAmount)
+                        })
+                        
+                        saveBtn.addEventListener('click', () => {
+                            let plainNumber = parseInt(paymentInput.value.replace('$', '').replace('.', ''))
+
+                            if(plainNumber){
+                                if(plainNumber > this.total) plainNumber = this.total
+console.log('click this._doc', this._doc)
+                                fireEvent(document, 'paymentAdded', {
+                                    amount: plainNumber,
+                                    orderForm: this,
+                                    doc: this._doc
+                                })
+
+                                paymentTemplate.remove()
+                                paymentTemplate = null
+                            }
+                        })
+
+                        document.body.appendChild(paymentTemplate)
+                    })
+                }, 10)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-order")) {
+            window.customElements.define("snp-input-order", SnpOrderInput);
+        }
+    })();
+
+</script>

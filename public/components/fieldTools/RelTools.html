@@ -1,0 +1,40 @@
+<template id="snp-field-template">
+
+    <style>
+        :host {
+            display: block;
+        }
+    </style>
+
+    <div class="snp-rel-tools">
+        <button>
+            <snp-icon icon-name="plus"></snp-icon>
+        </button>
+    </div>
+
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-field-template");
+
+        class SnpRelTools extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+            }
+
+            init(fieldInfo) {
+                this.fieldInfo = fieldInfo
+            }
+        }
+
+        if (!window.customElements.get("snp-input-tools-rel")) {
+            window.customElements.define("snp-input-tools-rel", SnpRelTools);
+        }
+    })();
+
+</script>

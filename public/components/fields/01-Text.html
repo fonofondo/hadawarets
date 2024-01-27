@@ -1,0 +1,89 @@
+<template id="snp-text-input-template">
+    <snp-icon class="input-icon" icon-name="edit"></snp-icon>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-text-input-template");
+
+        class SnpTextInput extends SnpInput {
+            constructor() {
+                super();
+                this.wrap.innerHTML = ''
+                this.wrap.appendChild(template.content.cloneNode(true));
+                this.inputElement = document.createElement('snp-content-editable')
+                this.inputElement.classList.add('input')
+                this.wrap.prepend(this.inputElement)
+            }
+
+            init(fieldInfo) {
+                super.init(fieldInfo)
+
+                if (this.fieldInfo.autocomp) {
+                    this.autocomp = document.createElement('snp-autocomp')
+                    this.autocomp.init(this)
+                    this.wrap.appendChild(this.autocomp);
+                }
+
+                const iconElement = this.wrap.querySelector('.input-icon')
+
+                if (this.fieldInfo.icon) {
+                    iconElement.setAttribute('icon-name', this.fieldInfo.icon);
+                } else if (this.fieldInfo.autocomp) {
+                    iconElement.setAttribute('icon-name', 'search');
+                }
+
+                // if (this.fieldInfo.readonly) {
+                //     iconElement.setAttribute('icon-name', 'lock');
+                //     this.inputElement.setReadonly(true)
+                //     this.wrap.classList.add('readonly')
+                // }
+
+                this.inputElement.addEventListener('keydown', (event) => {
+                    if (event.keyCode == 13) { //  && !event.shiftKey
+                        event.preventDefault();
+                    }
+                })
+
+                this.inputElement.addEventListener('paste', (event) => {
+                    event.preventDefault();
+                    const pasted = (event.clipboardData || window.clipboardData).getData('text');
+                    const plainText = pasted.replace(/(\r\n|\n|\r)/gm, "")
+                    this.inputElement.textContent = plainText
+                })
+
+                if (this.fieldInfo.autocomp) {
+                    document.addEventListener('autocompEntryClicked', (e) => {
+                        this.onAutocomp(e)
+                    })
+                }
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.fieldValue = this._doc[this.fieldInfo.fieldKey]
+                this.render()
+            }
+
+            render() {
+                if (this.fieldValue) this.inputElement.value = this.fieldValue
+            }
+
+            onAutocomp(e) {
+                if (this == e.detail.field) {
+                    const doc = e.detail.doc
+                    const autocompField = this.fieldInfo.autocomp.split('.')[1]
+                    if (autocompField && doc && doc[autocompField]) this.inputElement.value = doc[autocompField]
+                }
+            }
+        }
+
+        globalThis.SnpTextInput = SnpTextInput
+
+        if (!window.customElements.get("snp-input-text")) {
+            window.customElements.define("snp-input-text", SnpTextInput);
+        }
+    })();
+
+</script>

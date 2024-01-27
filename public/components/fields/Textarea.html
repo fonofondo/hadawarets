@@ -1,0 +1,33 @@
+<template id="snp-textarea-input-template">
+
+    <style>
+        .input {
+            min-height: 2.6em;
+        }
+    </style>
+
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-textarea-input-template");
+
+        class SnpTextareaInput extends SnpTextInput {
+            constructor() {
+                super();
+                this.wrap.appendChild(template.content.cloneNode(true));
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'align-left';
+                super.init(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-textarea")) {
+            window.customElements.define("snp-input-textarea", SnpTextareaInput);
+        }
+    })();
+
+</script>

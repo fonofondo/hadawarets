@@ -1,0 +1,19 @@
+<script>
+
+    async function laestrellita_pedidos_beforesave(data) {
+        return new Promise((resolve) => {
+            if (!data.rel_contacts_name) {
+                snpalert('Por favor indique el cliente')
+                resolve(false)
+                return
+            }
+
+            if (!data.code) {
+                const clientName = data.rel_contacts_name.name.toUpperCase().substring(0, 5);
+                data.code = clientName + '-' + dateToCode(new Date())
+            }
+
+            resolve(data)
+        })
+    }
+</script>

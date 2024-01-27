@@ -1,0 +1,56 @@
+<template id="snp-icon-template">
+    <link rel="stylesheet" href="css/vendor/fontawesome/css/all.min.css">
+
+    <style>
+        .snp-icon {
+            display: inline-block;
+        }
+    </style>
+
+    <div class="snp-icon"><i></i></div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-icon-template");
+
+        class SnpIcon extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.$icon = this._shadowRoot.querySelector("i");
+            }
+
+            get iconName() {
+                return this.getAttribute("icon-name");
+            }
+
+            set iconName(value) {
+                this.setAttribute("icon-name", value);
+            }
+
+            static get observedAttributes() {
+                return ["icon-name"];
+            }
+
+            attributeChangedCallback(name, oldVal, newVal) {
+                this.render();
+            }
+
+            render() {
+                this.$icon.setAttribute('class', '')
+                this.$icon.classList.add("fa");
+                this.$icon.classList.add("fa-" + jQuery.trim(this.iconName));
+            }
+        }
+
+        if (!window.customElements.get("snp-icon")) {
+            window.customElements.define("snp-icon", SnpIcon);
+        }
+    })();
+
+</script>

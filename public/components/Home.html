@@ -1,0 +1,61 @@
+<template id="snp-home-template">
+    <style>
+        #snp-home {
+            padding: 1em;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+            max-height: 100%;
+        }
+
+        @media only screen and (max-width: 667px) {}
+    </style>
+
+    <div id="snp-home">
+
+    </div>
+</template>
+
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-home-template");
+
+        class SnpHome extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.container = this._shadowRoot.getElementById('snp-home')
+
+            }
+
+            update() {
+                this.container.innerHTML = ''
+                let homeTag
+
+                homeTag = 'snp-home-' + appName
+
+                // if (snpUser && snpUser.cargo) {
+                //     homeTag = 'snp-home-' + appName + '-' + snpUser.cargo.name
+                // } else {
+                //     homeTag = 'div'
+                // }
+
+                this.container.append(document.createElement(homeTag))
+            }
+
+            connectedCallback() {
+                this.update()
+            }
+        }
+
+        ////////
+
+        if (!window.customElements.get("snp-home")) {
+            window.customElements.define("snp-home", SnpHome);
+        }
+    })();
+</script>

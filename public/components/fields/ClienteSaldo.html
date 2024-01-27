@@ -1,0 +1,80 @@
+<template id="snp-clientesaldo-input-template">
+    <style>
+        input {
+            border: none;
+            outline: none;
+            padding: 4px;
+            font-size: 1em;
+        }
+    </style>
+    <input class="input" type="text"  readonly/>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-clientesaldo-input-template");
+
+        class SnpClienteSaldoInput extends SnpTextInput {
+            static async getSaldo(clientDoc){
+                const pedidos = await snpdb.find({
+                    snptype: 'pedidos',
+                    filters: {
+                        'rel_contacts_name.snpId': clientDoc.snpId,
+                    }
+                })
+
+                let saldo = 0
+                for(var pedido of pedidos.docs){
+                    saldo -= pedido.matrix_productos.total
+
+                    if(pedido.pagos_history){
+                        for(var pago of pedido.pagos_history){
+                            saldo += pago.suma
+                        }
+                    }
+                }
+                return saldo
+            }
+
+            constructor() {
+                super();
+                this.wrap.querySelector(".input").remove()
+                this.wrap.prepend(template.content.cloneNode(true));
+                this.inputElement = this.wrap.querySelector(".input")
+                this.saldo = ''
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'user'
+                super.init(fieldInfo)
+            }
+
+            get value() {
+                return this.saldo
+            }
+
+            get textValue() {
+                return formatMoney(this._doc.saldo)
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                
+                SnpClienteSaldoInput.getSaldo(newDoc).then((saldo)=>{
+                    this.saldo = saldo
+                    this.inputElement.value = formatMoney(saldo)
+                })
+            }
+
+            
+        }
+
+        globalThis.SnpClienteSaldoInput = SnpClienteSaldoInput
+
+        if (!window.customElements.get("snp-input-cliente-saldo")) {
+            window.customElements.define("snp-input-cliente-saldo", SnpClienteSaldoInput);
+        }
+    })();
+
+</script>

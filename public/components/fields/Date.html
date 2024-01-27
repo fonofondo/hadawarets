@@ -1,0 +1,30 @@
+<template id="snp-date-input-template">
+    <style>
+        input {
+            border: none;
+            outline: none;
+            width: 100%;
+        }
+    </style>
+    <input type="date" class="input" />
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-date-input-template");
+
+        class SnpDateInput extends SnpTextInput {
+            constructor() {
+                super();
+                this.wrap.appendChild(template.content.cloneNode(true));
+                this.inputElement = this.wrap.querySelector("input")
+            }
+        }
+
+        if (!window.customElements.get("snp-input-date")) {
+            window.customElements.define("snp-input-date", SnpDateInput);
+        }
+    })();
+
+</script>

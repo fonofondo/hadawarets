@@ -1,0 +1,51 @@
+<template id="snp-contenteditable-template">
+    <style>
+        :host {
+            flex-grow: 1;
+        }
+
+        .input {
+            /*min-width: 100px;*/
+            width: 100%;
+            outline: none;
+            padding: 0.3em;
+            box-sizing: border-box;
+            flex-grow: 1;
+        }
+    </style>
+    <div class="input" contenteditable="true"></div>
+</template>
+
+<script>
+    (() => {
+        const template = document.getElementById("snp-contenteditable-template");
+
+        class SnpContentEditable extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.inputElement = this._shadowRoot.querySelector(".input");
+
+                this.inputElement.addEventListener('input', () => {
+                    fireEvent(this, 'input', this.inputElement.value)
+                })
+            }
+
+            get value() {
+                return this.inputElement.textContent
+            }
+
+            set value(newVal) {
+                this.inputElement.textContent = newVal
+            }
+        }
+
+        if (!window.customElements.get("snp-content-editable")) {
+            window.customElements.define("snp-content-editable", SnpContentEditable);
+        }
+    })()
+
+</script>

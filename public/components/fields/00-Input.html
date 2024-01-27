@@ -1,0 +1,172 @@
+<template id="snp-input-template">
+
+    <style>
+        .input-wrap.readonly {
+            background-color: var(--snp-foreground-alpha05);
+        }
+
+        .input-wrap {
+            border: 1px solid var(--snp-foreground-alpha3);
+            display: flex;
+        }
+
+        .input-wrap snp-icon {
+            color: var(--snp-foreground-alpha8);
+            padding: 4px 4px 0 0.5em;
+            width: 1em;
+            text-align: center;
+        }
+    </style>
+
+    <div class="snp-input">
+        <div class="input-wrap"></div>
+    </div>
+</template>
+
+<script>
+    const template = document.getElementById("snp-input-template");
+
+    class SnpInput extends HTMLElement {
+        constructor() {
+            super();
+
+            this.icon = 'edit'
+
+            this._shadowRoot = this.attachShadow({ mode: "open" });
+            this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+            this.wrap = this._shadowRoot.querySelector(".input-wrap");
+
+            this._doc = {}
+        }
+
+        init(fieldInfo) {
+            this.fieldInfo = fieldInfo
+            if (this.inputElement) {
+                this.inputElement.addEventListener('input', () => {
+                    this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
+                })
+            }
+        }
+
+        set doc(newDoc) {
+            this._doc = newDoc
+        }
+
+        get doc() {
+            return this._doc
+        }
+
+        get value() {
+            this.fieldValue = this._doc[this.fieldInfo.fieldKey] //this.inputElement.value
+            return this.fieldValue
+            //return this.inputElement ? this.inputElement.value : '';
+        }
+
+        get textValue() {
+            return this.value
+        }
+
+        get filterElement() {
+            const element = document.createElement('snp-content-editable')
+            element.classList.add('text-input')
+            element.classList.add('filter-input')
+            const wrap = document.createElement('div')
+            const icon = document.createElement('snp-icon')
+            icon.iconName = 'search'
+            wrap.appendChild(element)
+            wrap.appendChild(icon)
+            wrap.classList.add('filter-wrap')
+
+            icon.addEventListener('click', () => {
+                element.value = ''
+                wrap.classList.remove('tainted')
+                icon.iconName = 'search'
+                icon.render()
+                fireEvent(wrap, 'input', {})
+            })
+
+            const reset = () => {
+                wrap.classList.remove('tainted')
+                icon.iconName = 'search'
+            }
+
+            element.addEventListener('input', () => {
+                fireEvent(wrap, 'input', {})
+                if ($.trim(element.value)) {
+                    wrap.classList.add('tainted')
+                    icon.iconName = 'times'
+                } else {
+                    reset()
+                }
+                icon.render()
+            })
+
+            Object.defineProperty(wrap, "value", {
+                get: function value() {
+                    return element.value
+                },
+                set: function value(newVal) {
+                    element.value = newVal
+                    if (!newVal) {
+                        wrap.classList.remove('tainted')
+                        icon.iconName = 'search'
+                    }
+                }
+            });
+
+            return wrap
+        }
+
+        render() {
+
+        }
+
+        reset() {
+            this.fieldValue = this._doc[this.fieldInfo.fieldKey] || ''
+        }
+
+        update() {
+
+        }
+
+        // initField(doc, fieldKey) {
+        //     this.doc = doc
+        //     this.fieldKey = fieldKey
+        //     this.fieldInfo = globalThis.scheme.modules[doc.snptype].fields[fieldKey]
+        //     this.render();
+        //     this.value = doc[fieldKey]
+        // }
+
+        // set readonly(value) {
+        //     if (value) {
+        //         $(this.wrap).find('[contenteditable]').removeAttr('contenteditable')
+        //     } else {
+        //         $(this.wrap).find('[contenteditable]').attr('contenteditable', true)
+        //     }
+        // }
+
+        // reset() {
+        //     this.value = null
+        //     return this.value
+        // }
+
+        // get value() {
+        //     return this.fieldValue
+        // }
+
+        // set value(newVal) {
+        //     if (this.inputElement) this.inputElement.value = newVal
+        //     this.fieldValue = newVal
+        // }
+
+        // get textValue() {
+        //     return this.value
+        // }
+
+        // render() {
+        //     console.error('Field render method not implemented')
+        // }
+    }
+
+</script>

@@ -1,0 +1,116 @@
+
+
+<template id="snp-order-row-input-template">
+    <style>
+        div {
+            display: table-cell;
+            padding: 0.3em;
+            border-bottom: 1px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+            vertical-align: middle;
+        }
+
+        .product-qty {
+            white-space: nowrap;
+        }
+
+        .product-qty input {
+            width: 3em;
+            text-align: center;
+        }
+
+        .product-total,
+        .product-price {
+            text-align: right;
+        }
+
+        .product-unit {
+            font-size: 0.8em;
+            padding: 0;
+            border: none;
+            text-align: center;
+            display: inline-block;
+        }
+    </style>
+    <div class="product-name"></div>
+    <div class="product-price"></div>
+    <div class="product-qty">
+        <input type="number" min="1" />
+        <div class="product-unit"></div>
+    </div>
+    <div class="product-total"></div>
+    <div class="product-delete">
+        <snp-icon icon-name="times"></snp-icon>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-order-row-input-template");
+
+        class SnpOrderRowInput extends HTMLElement {
+            constructor() {
+                super()
+                this._qty = 1
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+            }
+
+            get value() {
+                return parseInt(this._shadowRoot.querySelector('.product-total').textContent.replace(/(\.|\,|\$)/g, ''))
+            }
+
+            async init(productInfo, order) {
+                const productInventory = await this.getProductInventory(productInfo)
+
+                if(!productInventory){
+                    //alert('No hay inventario del producto.')
+                    
+                }
+               
+                const productPrice = productInventory.price
+
+                this._shadowRoot.querySelector('.product-name').textContent = productInfo.name
+                this._shadowRoot.querySelector('.product-unit').textContent = productInfo.unit
+                this._shadowRoot.querySelector('.product-price').textContent = formatMoney(productPrice)
+                this._shadowRoot.querySelector('.product-qty input').value = productInfo._qty
+
+                const totalElement = this._shadowRoot.querySelector('.product-total')
+                totalElement.textContent = formatMoney(parseInt(productPrice) * parseInt(productInfo._qty))
+
+
+                this._shadowRoot.querySelector('.product-qty input').addEventListener('change', () => {
+                    this._qty = parseInt(this._shadowRoot.querySelector('.product-qty input').value)
+                    totalElement.textContent = parseInt(productPrice) * this._qty
+                    fireEvent(document, 'orderProductQtyChange', { product: productInfo, order: order, qty: this._qty })
+                })
+                this._shadowRoot.querySelector('.product-delete').addEventListener('click', () => {
+                    this.parentElement.removeChild(this)
+                    fireEvent(document, 'orderProductDeleted', { product: productInfo, order: order })
+                })
+            }
+
+            async getProductInventory(productInfo){
+                const inventoryProducts = await snpdb.find({
+                    snptype: 'inventory',
+                    live: false,
+                    orderer: 'date_created',
+                    order: "ASC",
+                    filters: {
+                        'rel_productos.snpId': productInfo.snpId,
+                    }
+                })
+
+                const product = inventoryProducts.docs[0]
+
+                return product
+            }
+        }
+
+        if (!window.customElements.get("snp-input-order-row")) {
+            window.customElements.define("snp-input-order-row", SnpOrderRowInput);
+        }
+    })();
+
+</script>

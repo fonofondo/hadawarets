@@ -1,0 +1,116 @@
+<template id="snp-currency-cell-template">
+
+    <style>
+        :host {
+            justify-content: flex-end;
+            padding-right: 0.3em;
+        }
+    </style>
+
+    <div class="snp-currency-cell">
+        <slot></slot>
+    </div>
+</template>
+
+
+<template id="snp-currency-input-template">
+
+    <style>
+        input {
+            border: none;
+            background: none;
+            font-size: 1em;
+            width: 100%;
+            padding: 4px;
+        }
+
+        .input-icon {
+            display: none;
+        }
+    </style>
+
+    <input class="input" type="tel" />
+    <snp-icon class="input-icon" icon-name="dollar-sign"></snp-icon>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-currency-input-template");
+
+        class SnpCurrencyInput extends SnpTextInput {
+            constructor() {
+                super();
+
+                this.autonumeric_options = {
+                    currencySymbol: '$',
+                    decimalCharacter: ',',
+                    digitGroupSeparator: '.',
+                    decimalPlaces: 0
+                }
+
+                this.wrap.innerHTML = ''
+                this.wrap.append(template.content.cloneNode(true))
+                this.inputElement = this.wrap.querySelector(".input")
+
+                if (!this.autonumeric) {
+                    this.autonumeric = new AutoNumeric(this.inputElement, this.autonumeric_options);
+                }
+            }
+
+            reset() {
+                super.reset()
+                this.inputElement.value = ''
+                this.fieldValue = ''
+                this.autonumeric.set('')
+            }
+
+            get value() {
+                this.fieldValue = this.inputElement.value.replace(/(\.|\,|\$)/g, '')
+                return this.fieldValue
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.fieldValue = this._doc[this.fieldInfo.fieldKey] || ''
+                this.autonumeric.set(this.fieldValue)
+            }
+
+            //async updateRels() {
+            //    return this.value.replace(/(\.|\,|\$)/g, '')
+            //}
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'dollar-sign';
+                super.init(fieldInfo)
+            }
+
+            get textValue() {
+                return formatMoney(this._doc[this.fieldInfo.fieldKey], true)
+            }
+        }
+
+        const cellTemplate = document.getElementById("snp-currency-cell-template");
+
+        class SnpCurrencyCell extends HTMLElement {
+            constructor() {
+                super();
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(cellTemplate.content.cloneNode(true));
+            }
+        }
+
+        if (!window.customElements.get("snp-input-currency")) {
+            window.customElements.define("snp-input-currency", SnpCurrencyInput);
+        }
+
+        if (!window.customElements.get("snp-grid-cell-currency")) {
+            window.customElements.define("snp-grid-cell-currency", SnpCurrencyCell);
+        }
+
+
+    })();
+
+
+
+</script>

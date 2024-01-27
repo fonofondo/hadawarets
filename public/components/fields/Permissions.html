@@ -1,0 +1,146 @@
+<template id="snp-permissions-input-template">
+
+    <style>
+        :host {
+            display: block;
+            border-left: 1px solid var(--snp-foreground-alpha2);
+            border-top: 1px solid var(--snp-foreground-alpha2);
+            padding: 0.2em 0 0 0.2em;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        th {
+            padding: 0.3em;
+            border-bottom: 2px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+            min-width: 3em;
+        }
+
+        td {
+            padding: 0.3em;
+            border-bottom: 1px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+            text-align: center;
+        }
+
+        td:nth-child(1) {
+            text-align: right;
+        }
+    </style>
+
+    <table id="permissions-table">
+
+    </table>
+
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-permissions-input-template");
+
+        class SnpPermissionsInput extends HTMLElement {
+            constructor() {
+                super();
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.table = this._shadowRoot.getElementById('permissions-table')
+                this.perms = []
+            }
+
+            init(fieldInfo) {
+                this.fieldInfo = fieldInfo
+                if (this.inputElement) {
+                    this.inputElement.addEventListener('input', () => {
+                        this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
+                    })
+                }
+            }
+
+            reset() {
+                this.perms = []
+                this.render()
+            }
+
+            get value() {
+                const perms = []
+                this.table.querySelectorAll('input:checked').forEach((input) => {
+                    perms.push($(input).val())
+                });
+                return perms
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.fieldValue = this._doc[this.fieldInfo.fieldKey]
+                $(this.table).find('input:checked').attr('checked', false)
+                this.perms = this.fieldValue || []
+                this.render()
+            }
+
+            applyPerms() {
+                $(this.table).find('input:checked').attr('checked', false)
+                for (let perm of this.perms) {
+                    const input = $(this.table).find('input[value="' + perm + '"]')
+                    input.attr('checked', true)
+                }
+            }
+
+            get textValue() {
+                return '<a>Ver</a>'
+            }
+
+            makeTable() {
+                this.table.innerHTML = `
+                    <tr>
+                        <th>Módulo</th>
+                        <th>Acceder</th>
+                        <th>Editar</th>
+                        <th>Borrar</th>
+                        <th>Endosar</th>
+                        <th>Solo<br>Propios</th>
+                        <th>Oculto</th>
+                    </tr>
+                    <tr>
+                        <td>Todos</td>
+                        <td><input type="checkbox" value="view-all" /></td>
+                        <td><input type="checkbox" value="edit-all" /></td>
+                        <td><input type="checkbox" value="delete-all" /></td>
+                        <td><input type="checkbox" value="endorse-all" /></td>
+                        <td><input type="checkbox" value="own-all" /></td>
+                        <td></td>
+                    </tr>
+                `
+                const modules = globalThis.scheme.modules
+                for (let moduleKey of Object.keys(modules)) {
+                    const module = modules[moduleKey]
+                    const row = `
+                    <tr>
+                        <td>${modules[moduleKey].name}</td>
+                        <td><input type="checkbox" value="view-${moduleKey}"  /></td>
+                        <td><input type="checkbox" value="edit-${moduleKey}" /></td>
+                        <td><input type="checkbox" value="delete-${moduleKey}" /></td>
+                        <td><input type="checkbox" value="endorse-${moduleKey}" /></td>
+                        <td><input type="checkbox" value="own-${moduleKey}" /></td>
+                        <td><input type="checkbox" value="hidden-${moduleKey}" /></td>
+                    </tr>
+                    `
+                    $(this.table).append(row)
+                }
+            }
+
+            render() {
+                this.makeTable()
+                this.applyPerms()
+            }
+        }
+
+        if (!window.customElements.get("snp-input-permissions")) {
+            window.customElements.define("snp-input-permissions", SnpPermissionsInput);
+        }
+    })();
+
+</script>

@@ -1,0 +1,64 @@
+<template id="snp-landing-loader-template">
+    <style>
+        #landing-loader {
+            border: 2px solid var(--snp-primary-color);
+            top: 50%;
+            left: 50%;
+            margin-top: -50px;
+            margin-left: -50px;
+            display: flex;
+            justify-content: left;
+            align-items: center;
+            position: fixed;
+            background-color: var(--snp-background-color);
+            width: 100px;
+            max-width: 100%;
+            height: 4px;
+            padding: 2px;
+            z-index: 1000000;
+        }
+
+        #load-bar {
+            background-color: var(--snp-primary-color);
+            height: 4px;
+            width: 0%;
+        }
+    </style>
+
+    <div id="landing-loader">
+        <div id="load-bar"></div>
+    </div>
+</template>
+
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-landing-loader-template");
+
+        class LandingLoader extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+            }
+
+            init(steps) {
+                this.steps = steps
+                this.curStep = 0
+            }
+
+            stepUp() {
+                this.curStep++
+                this._shadowRoot.querySelector('#load-bar').style.width = `${(100 / this.steps) * this.curStep}%`
+            }
+        }
+
+        ////////
+
+        if (!window.customElements.get("snp-landing-loader")) {
+            window.customElements.define("snp-landing-loader", LandingLoader);
+        }
+    })();
+</script>

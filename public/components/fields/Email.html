@@ -1,0 +1,22 @@
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-email-input-template");
+
+        class SnpEmailInput extends SnpTextInput {
+            constructor() {
+                super();
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'at';
+                super.init(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-email")) {
+            window.customElements.define("snp-input-email", SnpEmailInput);
+        }
+    })();
+
+</script>

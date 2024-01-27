@@ -1,0 +1,73 @@
+<template id="snp-rel-input-template">
+
+    <style>
+
+    </style>
+
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-rel-input-template");
+
+        class SnpRelInput extends SnpTextInput {
+            constructor() {
+                super();
+            }
+
+            init(fieldInfo) {
+                super.init(fieldInfo)
+                if (this.fieldInfo.default == 'snpUser') {
+                    this.relDoc = globalThis.snpUser
+                } else {
+                    this.relDoc = null
+                }
+            }
+
+            get value() {
+                return this.relDoc
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.relDoc = this._doc[this.fieldInfo.fieldKey]
+                this.render()
+            }
+
+            get textValue() {
+                return this.inputElement.value
+            }
+
+            onAutocomp(e) {
+                // super.onAutocomp(e)
+                if (this == e.detail.field) {
+                    console.log('rel e.detail.doc', e.detail.doc)
+                    this.relDoc = e.detail.doc
+                    const autocompField = this.fieldInfo.autocomp.split('.')[1]
+                    if (this.relDoc[autocompField]) this.inputElement.value = this.relDoc[autocompField]
+                    else this.inputElement.value = ''
+                }
+            }
+
+            render() {
+                this.fieldInfo.icon = 'link';
+                super.render()
+
+                if (!('autocomp' in this.fieldInfo) || !this.relDoc) return
+
+                const autocompField = this.fieldInfo.autocomp.split('.')[1]
+
+                if (this.relDoc && autocompField) {
+                    this.inputElement.value = this.relDoc[autocompField]
+                }
+                else this.inputElement.value = ''
+            }
+        }
+
+        if (!window.customElements.get("snp-input-rel")) {
+            window.customElements.define("snp-input-rel", SnpRelInput);
+        }
+    })();
+
+</script>

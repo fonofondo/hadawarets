@@ -1,0 +1,57 @@
+<template id="snp-autocomp-entry-template">
+    <style>
+        .autocomp-entry {
+            padding: 0.5em;
+            border-bottom: 1px solid var(--snp-foreground-alpha1);
+        }
+
+        .autocomp-entry:hover {
+            background-color: var(--snp-foreground-alpha1);
+        }
+    </style>
+    <div class="autocomp-entry"></div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-autocomp-entry-template");
+
+        class SnpAutocompEntry extends HTMLElement {
+            constructor() {
+                super();
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.entryContainer = this._shadowRoot.querySelector('.autocomp-entry')
+            }
+
+            init(doc, field, fieldInfo, autocompQuery) {
+                const autocompField = fieldInfo.autocomp.split('.')[1]
+                const val = this.boldQuery($.trim(doc[autocompField]), autocompQuery)
+                this.entryContainer.innerHTML = val
+                this.addEventListener('click', () => {
+                    fireEvent(document, 'autocompEntryClicked', { field: field, doc: doc })
+                })
+            }
+
+            boldQuery(fieldVal, autocompQuery) {
+                if (!autocompQuery) return fieldVal;
+                let regex
+                if (autocompQuery.length == 1) {
+                    regex = new RegExp('^(' + escapeRegExp(autocompQuery) + ')', 'gi')
+                } else {
+                    regex = new RegExp('(' + escapeRegExp(autocompQuery) + ')', 'gi')
+                }
+
+                return fieldVal.replace(regex, (match, $1, offset, original) => {
+                    return '<b>' + $1 + '</b>';
+                })
+            }
+        }
+
+        if (!window.customElements.get("snp-autocomp-entry")) {
+            window.customElements.define("snp-autocomp-entry", SnpAutocompEntry);
+        }
+    })();
+
+</script>

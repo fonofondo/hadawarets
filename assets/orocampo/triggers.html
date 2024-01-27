@@ -1,0 +1,39 @@
+<script>
+
+    async function orocampo_pedidos_beforesave(data) {
+        return new Promise(async (resolve) => {
+            // if (!data.rel_contacts_name) {
+            //     snpalert('Por favor indique el cliente')
+            //     resolve(false)
+            //     return
+            // }
+
+            // if (!data.code) {
+            //     const clientName = data.rel_contacts_name.name.toUpperCase().substring(0, 5);
+            //     data.code = clientName + '-' + dateToCode(new Date())
+            // }
+
+
+            if(data.pagos_history && data.pagos_history.length){
+                console.log('data.pagos_history', data.pagos_history)
+                for(const pago of data.pagos_history){
+
+                    const { rel_pedidos, pagos_history, ...relData } = data
+
+                    if(!pago.snpId){
+                        pago.snptype = 'pagos'
+                        pago.fecha_de_pago = nowDateTime()
+                        pago.rel_pedidos = relData
+                        await snpdb.save(pago)
+                    }
+                }
+            }
+
+            data.rel_contacts_name.saldo = await SnpClienteSaldoInput.getSaldo(data.rel_contacts_name);
+            
+            await snpdb.save(data.rel_contacts_name)
+
+            resolve(data)
+        })
+    }
+</script>

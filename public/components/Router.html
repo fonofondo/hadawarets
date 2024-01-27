@@ -1,0 +1,95 @@
+<template id="snp-router-template">
+
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-router-template");
+
+        class SnpRouter extends HTMLElement {
+            constructor() {
+                super();
+                this.scheme = null
+                this.panes = {}
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this.currentPane = null
+
+                window.addEventListener('hashchange', () => {
+                    this.onHashChange(location.hash)
+                }, false);
+
+                document.addEventListener("snpInit", (e) => {
+                    this.scheme = e.detail
+                    this.onHashChange(location.hash)
+                });
+            }
+
+            showHome() {
+                if ('home' in this.panes) {
+                    this._shadowRoot.appendChild(this.panes['home'])
+                } else {
+                    var paneId = `home`
+                    var element = document.createElement('snp-home')
+                    element.setAttribute('id', paneId)
+                    this._shadowRoot.appendChild(element)
+                    this.panes[paneId] = element
+                }
+
+                this.currentPane = this.panes['home']
+            }
+
+            onHashChange(hash) {
+                var hashParts = this.getHashParts(hash)
+                if (this.currentPane) this.detachElement(this.currentPane)
+
+                if (!hashParts.module) {
+                    this.showHome()
+                    var paneId = `home`
+                    return
+                }
+
+                var moduleInfo = this.scheme['modules'][hashParts.module]
+                if (!moduleInfo) return;
+                var tag = `snp-${moduleInfo.type}`
+                var paneId = `${tag}-${hashParts.module}`
+
+                moduleInfo.moduleKey = hashParts.module
+
+                if (paneId in this.panes) {
+                    this._shadowRoot.appendChild(this.panes[paneId])
+                } else {
+                    var element = document.createElement(tag)
+                    element.setAttribute('id', paneId)
+                    element.moduleInfo = moduleInfo
+                    this._shadowRoot.appendChild(element)
+                    this.panes[paneId] = element
+                }
+
+                fireEvent(document, 'snpNavigate', paneId)
+                this.currentPane = this.panes[paneId]
+                globalThis.currentPane = this.panes[paneId]
+                globalThis.snpCurrentModule = hashParts.module
+            }
+
+            detachElement(node) {
+                this._shadowRoot.removeChild(node);
+            }
+
+            getHashParts(hash) {
+                hash = hash.replace(/^#/, '')
+                var hashParts = hash.split('/')
+                return {
+                    module: hashParts[0],
+                    action: hashParts[1],
+                    entry: hashParts[2],
+                }
+            }
+        }
+
+        if (!window.customElements.get("snp-router")) {
+            window.customElements.define("snp-router", SnpRouter);
+        }
+    })();
+
+</script>

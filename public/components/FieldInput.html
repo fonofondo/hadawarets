@@ -1,0 +1,160 @@
+<template id="snp-field-template">
+
+    <style>
+        :host {
+            display: table-row;
+        }
+
+        .snp-field {
+            display: table-cell;
+            padding: 0.3em;
+            width: 50%;
+        }
+
+        .snp-field-label {
+            display: table-cell;
+            text-align: right;
+            padding: 0.3em;
+            vertical-align: top;
+            padding-top: 0.6em;
+            line-height: 1em;
+        }
+
+        .snp-field-label small {
+            display: block;
+            font-size: 0.8em;
+            color: var(--snp-foreground-alpha5)
+        }
+    </style>
+    <div class="snp-field-label">
+    </div>
+    <div class="snp-field">
+    </div>
+    <div class="snp-field-tools">
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-field-template");
+
+        class SnpFieldInput extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.fieldWrap = this._shadowRoot.querySelector(".snp-field");
+                this.fieldTools = this._shadowRoot.querySelector(".snp-field-tools");
+                this.fieldLabel = this._shadowRoot.querySelector(".snp-field-label");
+            }
+
+            init(fieldInfo) {
+                this.fieldInfo = fieldInfo
+                this.tag = 'snp-input-' + this.fieldInfo.type
+                this.inputElement = document.createElement(this.tag)
+                if ('init' in this.inputElement) this.inputElement.init(this.fieldInfo)
+
+                const tools = 'snp-input-tools-' + this.fieldInfo.type
+                this.toolsElement = document.createElement(tools)
+                if ('init' in this.toolsElement) this.toolsElement.init(this.fieldInfo)
+            }
+
+            set doc(newDoc) {
+                this.inputElement.doc = newDoc
+            }
+
+            get value() {
+                return this.inputElement.value
+            }
+
+            validate(){
+                if(parseInt(this.fieldInfo.required) && !this.inputElement.value){
+                    return false
+                }
+                return true
+            }
+
+            render() {
+                if ('render' in this.inputElement) {
+                    this.inputElement.render()
+                    this.fieldWrap.appendChild(this.inputElement)
+                }
+
+                if ('render' in this.toolsElement) {
+                    this.toolsElement.render()
+                    this.fieldTools.appendChild(this.toolsElement)
+                }
+
+                let labelHtml = jQuery.trim(this.fieldInfo.label) + ':'
+                if (this.fieldInfo.sublabel) {
+                    labelHtml += `<small>${this.fieldInfo.sublabel}</small>`
+                }
+                this.fieldLabel.innerHTML = labelHtml
+            }
+
+            reset() {
+                if ('reset' in this.inputElement) {
+                    this.inputElement.reset()
+                } else {
+                    console.log('No reset function for ', this.inputElement)
+                }
+            }
+
+            update() {
+                if ('update' in this.inputElement) {
+                    this.inputElement.update()
+                } else {
+                    console.log('No update function for ', this.inputElement)
+                }
+            }
+
+
+
+            // set fieldInfo(value) {
+            //     this.render(value);
+            // }
+
+            // set readonly(value) {
+            //     this.inputElement.readonly = value
+            // }
+
+            // initFieldInput(doc, fieldKey) {
+            //     if ('initField' in this.inputElement) this.inputElement.initField(doc, fieldKey)
+            // }
+
+
+
+
+
+            // set value(newval) {
+            //     this.inputElement.value = newval
+            // }
+
+            // render(fieldInfo) {
+            //     const tag = 'snp-input-' + fieldInfo.type
+            //     this.inputElement = document.createElement(tag)
+            //     this.inputElement.fieldInfo = fieldInfo
+            //     this.fieldWrap.appendChild(this.inputElement)
+
+            //     const tools = 'snp-input-tools-' + fieldInfo.type
+            //     this.toolsElement = document.createElement(tools)
+            //     this.toolsElement.fieldInfo = fieldInfo
+            //     this.fieldTools.appendChild(this.toolsElement)
+
+            //     let labelHtml = jQuery.trim(fieldInfo.label) + ':'
+            //     if (fieldInfo.sublabel) {
+            //         labelHtml += `<small>${fieldInfo.sublabel}</small>`
+            //     }
+            //     this.fieldLabel.innerHTML = labelHtml
+            // }
+        }
+
+        if (!window.customElements.get("snp-field-input")) {
+            window.customElements.define("snp-field-input", SnpFieldInput);
+        }
+    })();
+
+</script>

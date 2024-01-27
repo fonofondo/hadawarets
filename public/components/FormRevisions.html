@@ -1,0 +1,94 @@
+<template id="snp-form-template">
+
+    <style>
+        select {
+            width: 20em;
+            padding: 0.3em;
+            outline: none;
+            font-size: 0.8em;
+        }
+
+        select.tainted {
+            border: 1px solid red;
+        }
+
+        @media only screen and (max-width: 667px) {}
+    </style>
+
+    <div class="revisions-select-wrap">
+        <select class="revisions-select"></select>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-form-template");
+
+        class SnpFormRevisions extends HTMLElement {
+            moduleInfo
+
+            constructor(docId) {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.select = this._shadowRoot.querySelector(".revisions-select");
+
+                this.select.addEventListener('change', async () => {
+                    const revId = this.select.value
+                    if (revId) {
+
+                        for (let revision of this.revisions) {
+                            if (revision.id == revId) {
+                                await this.form.loadDoc(revision)
+                                if (revision.status != 'active') {
+                                    this.select.classList.add('tainted')
+                                } else {
+                                    this.select.classList.remove('tainted')
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+
+            reset() {
+                this.select.innerHTML = ''
+                this.select.classList.remove('tainted')
+            }
+
+            init(revisions, form) {
+                this.form = form
+                this.revisions = revisions
+                revisions.sort(function (a, b) {
+                    if (a.date_created < b.date_created) {
+                        return 1;
+                    }
+                    if (a.date_created > b.date_created) {
+                        return -1;
+                    }
+                    return 0;
+                });
+
+                revisions.forEach((revision) => {
+                    if (!('creator' in revision)) return
+                    const option = document.createElement('option')
+                    const revisionDate = stampToDate(revision.date_created)
+                    option.setAttribute('value', revision.id)
+                    if (this.form.docId == revision.id) {
+                        option.setAttribute('selected', true)
+                    }
+                    option.textContent = `${revision.creator.name} - ${revisionDate}`
+                    this.select.appendChild(option)
+                })
+            }
+        }
+
+        if (!window.customElements.get("snp-form-revisions")) {
+            window.customElements.define("snp-form-revisions", SnpFormRevisions);
+        }
+    })();
+
+</script>

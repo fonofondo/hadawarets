@@ -1,0 +1,276 @@
+<!-- ruta clientes -->
+<template id="orocampo-ruta-clientes-template">
+    <style>
+        .rel-docs {
+            display: table;
+            border: none;
+            border-collapse: separate;
+            font-size: 0.9em;
+        }
+
+        .client-row,
+        .total-row,
+        .order-header,
+        snp-input-order-row {
+            display: table-row;
+        }
+
+        .client-row:nth-child(odd) {
+            background-color: var(--snp-foreground-alpha05);
+        }
+
+        .client-row:nth-child(1) {
+            background-color: none;
+        }
+
+        .order-header th {
+            padding: 0.3em;
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+        }
+
+        .client-row td,
+        .total-row td {
+            display: table-cell;
+            padding: 0.3em;
+        }
+
+        .client-row td {
+            padding: 0.7em 0.3em;
+            vertical-align: middle;
+        }
+
+        .total-row td {
+            border-top: 2px solid var(--snp-foreground-alpha2);
+        }
+
+        .client-row td:nth-child(2),
+        .client-row td:nth-child(6) {
+            text-align: center;
+        }
+    </style>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("orocampo-ruta-clientes-template");
+
+        class LaEstrelliltaRutaClientesInput extends SnpTextInput {
+            constructor() {
+                super();
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.relDocs = {}
+                this.relDocsContainer = document.createElement('table')
+                this.relDocsContainer.classList.add('rel-docs')
+                this.wrap.parentElement.append(this.relDocsContainer)
+
+                document.addEventListener('orderProductDeleted', (e) => {
+                    if (e.detail.order == this) {
+                        Object.keys(this.relDocs).forEach((docKey) => {
+                            if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
+                                delete this.relDocs[docKey]
+                                this.value = this.relDocs
+                            }
+                        })
+                    }
+                })
+
+                document.addEventListener('orderProductQtyChange', (e) => {
+
+                    if (e.detail.order == this) {
+
+                        Object.keys(this.relDocs).forEach((docKey) => {
+                            if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
+
+                                this.relDocs[docKey]._qty = e.detail.qty
+                                this.value = {
+                                    docs: this.relDocs
+                                }
+                            }
+                        })
+                    }
+                })
+            }
+
+            async updateRels() {
+                console.log('this.relDocs', this.relDocs)
+                return {
+                    docs: this.relDocs
+                }
+                if (!this.relDocs.length) {
+                    return []
+                }
+
+                const newRels = {}
+
+                for (let doc of this.relDocs) {
+                    const freshDoc = await snpdb.getDoc(doc.snpId)
+                    console.log('freshDoc', freshDoc)
+                    if (freshDoc) newRels[doc.id] = freshDoc
+                }
+
+                this.relDocs = newRels
+
+                return {
+                    docs: newRels
+                }
+            }
+
+            get value() {
+                if (this.relDocsContainer.querySelector('.client-row')) {
+                    const docs = {}
+
+                    this.relDocsContainer.querySelectorAll('.client-row').forEach((htmlRow) => {
+                        const doc = $(htmlRow).data('doc')
+                        docs[doc.id] = doc
+                    })
+
+                    return {
+                        docs: docs
+                    }
+                } else {
+                    return {
+                        docs: this.relDocs
+                    }
+                }
+            }
+
+            set value(val) {
+                if (!val) return;
+                if (('docs' in val) && Object.keys(val.docs).length) {
+                    const docs = val.docs
+
+                    if (!('autocomp' in this.passedFieldInfo)) return
+                    this.relDocs = docs
+                    const autocompField = this.passedFieldInfo.autocomp.split('.')[1]
+                    this.relDocsContainer.innerHTML = `
+                        <tr class="order-header">
+                            <th colspan="3">Orden</th> 
+                            <th>Cliente</th>    
+                            <th>Dirección</th>
+                            <th>Quitar</th>
+                        </tr>
+                    `
+
+                    Object.keys(this.relDocs).forEach((docKey, index) => {
+                        const clientRow = document.createElement('tr')
+                        clientRow.classList.add('client-row')
+
+                        $(clientRow).data('doc', this.relDocs[docKey])
+                        $(clientRow).data('docKey', docKey)
+
+                        const cell0 = document.createElement('td')
+                        const cell1 = document.createElement('td')
+                        const cell2 = document.createElement('td')
+                        cell0.innerHTML = index + 1
+                        cell1.innerHTML = this.relDocs[docKey].name
+                        cell2.innerHTML = this.relDocs[docKey].address
+
+                        const upBtn = document.createElement('snp-button')
+                        upBtn.innerHTML = '<snp-icon icon-name="chevron-up"></snp-icon>'
+                        const cell3 = document.createElement('td')
+                        cell3.append(upBtn)
+                        clientRow.append(cell3)
+
+                        clientRow.append(cell0)
+
+                        const downBtn = document.createElement('snp-button')
+                        downBtn.innerHTML = '<snp-icon icon-name="chevron-down"></snp-icon>'
+                        const cell4 = document.createElement('td')
+                        cell4.append(downBtn)
+                        clientRow.append(cell4)
+
+
+                        clientRow.append(cell1)
+                        clientRow.append(cell2)
+
+                        const deleteBtn = document.createElement('snp-button')
+                        deleteBtn.innerHTML = '<snp-icon icon-name="times"></snp-icon>'
+                        $(deleteBtn).data('snpId', docKey)
+                        const cell5 = document.createElement('td')
+                        cell5.append(deleteBtn)
+                        clientRow.append(cell5)
+
+                        this.addOrderEvents(clientRow, upBtn, downBtn, deleteBtn)
+
+                        this.relDocsContainer.append(clientRow)
+                    })
+
+                    this.inputElement.textContent = ''
+                } else {
+                    this.inputElement.textContent = ''
+                    this.relDocsContainer.innerHTML = ''
+                    this.relDocs = {}
+                }
+            }
+
+            addOrderEvents(clientRow, upBtn, downBtn, deleteBtn) {
+                upBtn.addEventListener('click', () => {
+                    const prevRow = $(clientRow).prev()
+                    if (prevRow && prevRow.index() != 0) {
+                        prevRow.before(clientRow)
+                    }
+                })
+
+                downBtn.addEventListener('click', () => {
+                    const nextRow = $(clientRow).next()
+                    if (nextRow) {
+                        nextRow.after(clientRow)
+                    }
+                })
+
+                deleteBtn.addEventListener('click', () => {
+                    delete this.relDocs[$(deleteBtn).data('snpId')]
+                    console.log('this.relDocs', $(deleteBtn).data('snpId'))
+                    this.value = { docs: this.relDocs }
+                })
+            }
+
+            reset() {
+                super.reset()
+                this.inputElement.textContent = ''
+                this.relDocsContainer.innerHTML = ''
+                this.relDocs = {}
+                this.total = 0
+            }
+
+            get textValue() {
+                return `${Object.keys(this.relDocs).length} Clientes`
+            }
+
+            onAutocomp(e) {
+                const field = e.detail.field
+                const doc = e.detail.doc
+
+                if (this == field) {
+                    if (doc.id in this.relDocs) {
+                        alert('El cliente "' + doc.name + '" ya está en la lista')
+                    } else {
+                        doc._qty = 1
+                        this.relDocs[doc.id] = doc
+                        this.value = {
+                            docs: this.relDocs
+                        }
+                    }
+
+                }
+            }
+
+            render(fieldInfo) {
+                fieldInfo.icon = 'list';
+                this.passedFieldInfo = fieldInfo
+                super.render(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-orocampo-ruta-clientes")) {
+            window.customElements.define("snp-input-orocampo-ruta-clientes", LaEstrelliltaRutaClientesInput);
+        }
+    })();
+
+</script>

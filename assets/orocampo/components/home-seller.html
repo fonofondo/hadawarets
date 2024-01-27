@@ -1,0 +1,582 @@
+
+
+<!-- home seller -->
+<template id="orocampo-home-seller-template">
+    <style>
+        h1 {
+            color: var(--snp-primary-color);
+            margin: 0.5em 0;
+        }
+
+        .home-table {
+            display: table;
+            margin-top: 2em;
+        }
+
+        #route-total {
+            border: 2px solid var(--snp-primary-shade-color);
+            padding: 0.5em;
+            border-radius: 0.5em;
+            width: max-content;
+        }
+
+        #route-total:empty {
+            display: none;
+        }
+
+        .home-table>div {
+            display: table-row;
+        }
+
+        .home-table>div>div {
+            display: table-cell;
+            border-right: 1px solid var(--snp-foreground-alpha4);
+            border-bottom: 10px solid var(--snp-primary-alpha2);
+            padding: 0.8em;
+            vertical-align: top;
+        }
+
+        .home-table>div>div:last-child {
+            vertical-align: middle;
+        }
+
+        .table-header-row div {
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--snp-foreground-alpha4) !important;
+        }
+
+        .client-orders {
+            display: table;
+            margin-bottom: 0.5em;
+            width: 100%;
+        }
+
+        .client-orders>div {
+            display: table-row;
+        }
+
+        .client-orders>div>div {
+            display: table-cell;
+            border-bottom: 1px solid var(--snp-foreground-alpha3);
+            vertical-align: middle;
+            font-size: 0.9em;
+            padding: 0.4em;
+        }
+
+        .client-orders>div>div:last-child {
+            border-right: none;
+            text-align: right;
+            width: 80px;
+        }
+
+        .green {
+            color: green;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .pedido-code {
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--snp-primary-color)
+        }
+
+        .pedido-saldo {
+            color: red;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .pago-suma {
+            display: block;
+            text-align: center;
+            color: var(--snp-foreground-color);
+            text-decoration: none;
+        }
+
+        #snp-home-prestamos,
+        #snp-home-gastos {
+            padding-top: 2em;
+        }
+
+        #liquid-table>div>div,
+        #expenses-table>div>div {
+            border-bottom-width: 2px;
+        }
+
+        .empty-msg {
+            padding: 1em 0;
+        }
+
+        @media only screen and (max-width: 667px) {
+            .home-table {
+                font-size: 1.1em;
+            }
+
+            #snp-home-cartera {
+                width: max-content;
+            }
+        }
+    </style>
+
+    <h1 id="day-title"></h1>
+
+    <snp-tabs>
+
+        <div slot="tabs" id="cartera-tab">Cartera <br><b id="cartera-total">-</b></div>
+        <div slot="tabs">Gastos <br><b id="gastos-total">-</b></div>
+        <div slot="tabs">Prestamos <br><b id="prestamos-total">-</b></div>
+        <div slot="tabs">Liquidación <br><b id="liquidacion-total">-</b></div>
+
+        <div slot="content">
+            <div id="snp-home-cartera">
+
+            </div>
+        </div>
+        <div slot="content">
+            <div id="snp-home-gastos">
+
+            </div>
+        </div>
+        <div slot="content">
+            <div id="snp-home-prestamos">
+
+            </div>
+        </div>
+        <div slot="content">
+            <div id="snp-home-liquidacion">
+
+            </div>
+        </div>
+
+    </snp-tabs>
+
+</template>
+
+<script>
+    (() => {
+        const template = document.getElementById("orocampo-home-seller-template");
+
+        class SnporocampoHomeVendedor extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.carteraContainer = this._shadowRoot.getElementById('snp-home-cartera')
+                this.expensesContainer = this._shadowRoot.getElementById('snp-home-gastos')
+                this.loansContainer = this._shadowRoot.getElementById('snp-home-prestamos')
+                this.liquidContainer = this._shadowRoot.getElementById('snp-home-liquidacion')
+
+                document.addEventListener('dbSyncEnd', (e) => {
+                    this.update(false)
+                })
+
+                document.addEventListener('localSaveDoc', (e) => {
+                    this.update()
+                })
+            }
+
+
+            async update(presync = true) {
+
+                if (presync) snpdb.sync()
+
+                if (this.updateTimeout) {
+                    clearTimeout(this.updateTimeout)
+                }
+
+                this.updateTimeout = setTimeout(async () => {
+                    console.log('home vendedor update')
+
+                    this._shadowRoot.getElementById('day-title').innerHTML = 'Cargando...'
+
+                    var days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                    var d = new Date();
+                    this.dayName = days[d.getDay()];
+
+
+                    const rutasResult = await snpdb.find({
+                        type: 'rutas',
+                        live: true,
+                        filters: {
+                            'rel_users_name.snpId': snpUser && snpUser.snpId,
+                            dia_de_venta: this.dayName
+                        }
+                    })
+
+                    if (rutasResult.count) {
+
+                        this.route = rutasResult.docs[0]
+
+                        const ordersResult = await snpdb.find({
+                            type: 'pedidos',
+                            filters: {
+                                'rel_ruta.snpId': this.route.snpId
+                            },
+                            live: true
+                        })
+
+                        this.pedidos = ordersResult.docs
+
+                        this.pedidos.sort((a, b) => {
+                            return parseFloat(a.saldo) > parseFloat(b.saldo) ? 1 : -1;
+                        });
+
+                        if (this.pedidos.length) {
+                            this.routeTotal = 0
+                            this.pedidos.forEach(pedido => {
+                                if (pedido.saldo < 0) this.routeTotal += -parseInt(pedido.saldo)
+                                this._shadowRoot.getElementById('cartera-total').innerHTML = formatMoney(this.routeTotal)
+                            });
+                        }
+
+                        await this.updateClients()
+                        await this.updateGastos()
+                        await this.updatePrestamos()
+                        await this.updateLiquidacion()
+
+                        this._shadowRoot.getElementById('day-title').innerHTML = this.dayName + ': ' + this.route.name
+                    } else {
+                        this.reset()
+                    }
+                }, 1000)
+            }
+
+            reset() {
+                this.expensesContainer.innerHTML = ''
+                this.carteraContainer.innerHTML = ''
+                this.loansContainer.innerHTML = ''
+                this._shadowRoot.getElementById('cartera-total').innerHTML = '-'
+                this._shadowRoot.getElementById('prestamos-total').innerHTML = '-'
+                this._shadowRoot.getElementById('gastos-total').innerHTML = '-'
+                this._shadowRoot.getElementById('day-title').innerHTML = 'Sin rutas asignadas para hoy.'
+            }
+
+            async updateClients() {
+                this.carteraContainer.innerHTML = ''
+
+                if (Object.keys(this.route.matrix_clientes.docs).length) {
+
+
+                    // $(this._shadowRoot.getElementById('snp-home')).append('<h2>Clientes</h2>')
+                    const routeClientsContainer = $('<div id="route-clients" class="home-table"></div>')
+                    $(this.carteraContainer).append(routeClientsContainer)
+
+                    routeClientsContainer.append(`<div class="table-header-row">
+                        <div></div>
+                        <div>Cliente</div>
+                        <div>Pedidos</div>
+                    </div>`)
+
+                    var index = 0
+                    for (let clientKey of Object.keys(this.route.matrix_clientes.docs)) {
+                        const client = this.route.matrix_clientes.docs[clientKey]
+                        const div = $('<div>')
+
+                        div.append($('<div>').append(index + 1))
+
+                        div.append($('<div>').html(`<b>${client.name}</b> ${client.phone ? '<br>' + client.phone : ''} <br>${client.address}`))
+
+
+                        const addOrderButton = $('<snp-button><snp-icon icon-name="receipt"></snp-icon> Nuevo Pedido</snp-button>')
+                        addOrderButton.click(() => {
+                            snpLoadModalForm({ type: 'pedidos', rel_ruta: this.route, rel_contacts_name: client }, () => {
+                                this.update()
+                            })
+                        })
+
+
+
+                        const clientOrders = $('<div class="client-orders">')
+                        const clientOrdersCount = {}
+
+                        for (let pedido of this.pedidos) {
+                            if (pedido.rel_contacts_name.snpId == client.snpId) {
+
+                                if (!clientOrdersCount[client.snpId]) {
+                                    clientOrdersCount[client.snpId] = 1
+                                } else {
+                                    clientOrdersCount[client.snpId]++
+                                }
+
+                                if (pedido.saldo >= 0 && clientOrdersCount[client.snpId] > 3) {
+                                    return
+                                }
+
+                                let addPaymentButton = ''
+
+                                const resultPagos = await snpdb.find({
+                                    type: 'pagos',
+                                    live: false,
+                                    filters: {
+                                        'rel_pedidos_code.snpId': pedido.snpId,
+                                    }
+                                })
+
+                                let pagosStr = []
+                                for (let pagoDoc of resultPagos.docs) {
+                                    this.pagosTotal += parseFloat(pagoDoc.suma)
+                                    pagosStr.push('<a href="javascript:void(0)" class="pago-suma" data-snpid="' + pagoDoc.snpId + '">-'
+                                        + formatMoney(pagoDoc.suma) + '</a>')
+                                }
+
+                                addPaymentButton = $(`<div>${pagosStr.join('')}<div class="pedido-saldo" >${formatMoney(-pedido.saldo)}</div><snp-button width="100%">
+                                <small><snp-icon icon-name="hand-holding-usd"></snp-icon> Abonar</small></snp-button></div>`)
+
+                                if (parseFloat(pedido.saldo) >= 0) {
+                                    addPaymentButton = $(`<div>${pagosStr.join('')}<div class="green"><snp-icon icon-name="check"></snp-icon> Pagado</div></div>`)
+                                }
+
+                                addPaymentButton.find('snp-button').click(() => {
+                                    snpLoadModalForm({ type: 'pagos', rel_pedidos_code: pedido }, () => {
+                                        this.update()
+                                    })
+                                })
+
+                                const orderCard = $(`<div><div>
+                                                    <a class="pedido-code" href="javascript:void(0)">
+                                                    ${pedido.code}
+                                                    </a>
+                                                    <br>
+                                        ${pedido.matrix_productos.docs
+                                        ? Object.keys(pedido.matrix_productos.docs).length
+                                        : 0} 
+                                        Productos<br>
+                                        Total: ${formatMoney(pedido.matrix_productos.total)}
+                                        </div></div>`)
+                                    .append(
+                                        $('<div>').append(addPaymentButton)
+                                    )
+
+                                orderCard.find('a.pedido-code').click(() => {
+                                    snpLoadModalForm(pedido, () => {
+                                        this.update()
+                                    })
+                                })
+
+                                orderCard.find('a.pago-suma').click(function () {
+                                    snpdb.getDoc($(this).data('snpid')).then((doc) => {
+                                        snpLoadModalForm(doc, () => {
+                                            this.update()
+                                        })
+                                    })
+                                })
+
+                                clientOrders.append(orderCard)
+                            }
+                        }
+                        // div.append($('<div>').append(addPaymentButton))
+                        div.append($('<div>').append(clientOrders).append(addOrderButton))
+
+                        $(this._shadowRoot.getElementById('route-clients')).append(div)
+
+                        index++
+                    }
+                } else {
+                    this.carteraContainer.innerHTML = '<div class="empty-msg">Sin clientes para esta ruta.</div>'
+                }
+            }
+
+            async updateGastos() {
+                this.expensesContainer.innerHTML = ''
+
+                const addExpenseButton = $('<snp-button><snp-icon icon-name="donate"></snp-icon> Nuevo Gasto</snp-button>')
+                addExpenseButton.click(() => {
+                    snpLoadModalForm({ type: 'gastos', ruta: this.route }, () => {
+                        this.update()
+                    })
+                })
+
+                $(this.expensesContainer).append(addExpenseButton)
+
+                // find the route
+                const result = await snpdb.find({
+                    type: 'gastos',
+                    live: true,
+                    filters: {
+                        'ruta.snpId': this.route.snpId,
+                        fecha: nowDateTime().substring(0, 8)
+                    }
+                })
+
+                this.totalExpense = 0
+                if (result.count) {
+                    const expensesTable = $('<div id="expenses-table" class="home-table">')
+
+                    expensesTable.append(`<div class="table-header-row">
+                            <div>Concepto</div>
+                            <div>Suma</div>
+                            <div>Notas</div>
+                        </div>`)
+
+                    $(this.expensesContainer).append(expensesTable)
+
+                    result.docs.forEach((expenseDoc) => {
+                        const row = $('<div>')
+                        row.append(
+                            $('<div>').html(expenseDoc.concepto)
+                        )
+                        row.append(
+                            $('<div>').html(formatMoney(expenseDoc.suma))
+                        )
+                        row.append(
+                            $('<div>').html(expenseDoc.notas)
+                        )
+                        expensesTable.append(row)
+                        this.totalExpense += parseFloat(expenseDoc.suma)
+                    })
+                    this._shadowRoot.getElementById('gastos-total').innerHTML = formatMoney(this.totalExpense)
+                }
+            }
+
+            async updatePrestamos() {
+                this.loansContainer.innerHTML = ''
+
+                const addLoadButton = $('<snp-button><snp-icon icon-name="comments-dollar"></snp-icon> Nuevo Prestamo</snp-button>')
+                addLoadButton.click(() => {
+                    snpLoadModalForm({ type: 'prestamos', ruta: this.route }, () => {
+                        this.update()
+                    })
+                })
+
+                $(this.loansContainer).append(addLoadButton)
+
+                // find the route
+                const result = await snpdb.find({
+                    type: 'prestamos',
+                    live: true,
+                    filters: {
+                        'ruta.snpId': this.route.snpId,
+                        fecha: nowDateTime().substring(0, 8)
+                    }
+                })
+
+                this.totalLoan = 0
+
+                if (result.count) {
+                    const loansTable = $('<div id="expenses-table" class="home-table">')
+
+                    loansTable.append(`<div class="table-header-row">
+                            <div>Concepto</div>
+                            <div>Suma</div>
+                            <div>Notas</div>
+                        </div>`)
+
+                    $(this.loansContainer).append(loansTable)
+
+                    result.docs.forEach((loanDoc) => {
+                        const row = $('<div>')
+                        row.append(
+                            $('<div>').html(loanDoc.concepto)
+                        )
+                        row.append(
+                            $('<div>').html(formatMoney(loanDoc.suma))
+                        )
+                        row.append(
+                            $('<div>').html(loanDoc.notas)
+                        )
+                        loansTable.append(row)
+                        this.totalLoan += parseFloat(loanDoc.suma) || 0
+                    })
+                    this._shadowRoot.getElementById('prestamos-total').innerHTML = formatMoney(this.totalLoan)
+                }
+            }
+
+            async updateLiquidacion() {
+
+                let pagosTotal = 0 //this.routeTotal - this.totalExpense - this.totalLoan
+
+                for (let pedido of this.pedidos) {
+                    const resultPagos = await snpdb.find({
+                        type: 'pagos',
+                        live: false,
+                        filters: {
+                            'rel_pedidos_code.snpId': pedido.snpId,
+                        }
+                    })
+
+                    for (let pagoDoc of resultPagos.docs) {
+                        pagosTotal += parseFloat(pagoDoc.suma)
+                    }
+                }
+
+                this.liquidContainer.innerHTML = ''
+
+                const liquidTotal = pagosTotal - this.totalExpense - this.totalLoan
+
+                if (pagosTotal) {
+                    this._shadowRoot.getElementById('liquidacion-total').innerHTML = formatMoney(liquidTotal)
+                } else {
+                    this._shadowRoot.getElementById('liquidacion-total').innerHTML = '-'
+                }
+
+                const liquidTable = $('<div id="liquid-table" class="home-table">')
+
+                liquidTable.append(`<div class="table-header-row">
+                                        <div>Concepto</div>
+                                        <div>Suma</div>
+                                    </div>`)
+
+                if (pagosTotal) liquidTable.append(`<div>
+                                        <div>Pagos</div>
+                                        <div>${formatMoney(pagosTotal)}</div>
+                                    </div>`)
+
+                if (this.totalExpense) liquidTable.append(`<div>
+                                        <div>Gastos</div>
+                                        <div>${formatMoney(this.totalExpense)}</div>
+                                    </div>`)
+
+                if (this.totalLoan) liquidTable.append(`<div>
+                                        <div>Prestamos</div>
+                                        <div>${formatMoney(this.totalLoan)}</div>
+                                    </div>`)
+
+                if (liquidTotal) liquidTable.append(`<div>
+                                        <div><b>Total a Liquidar</b></div>
+                                        <div><b>${formatMoney(liquidTotal)}</b></div>
+                                    </div>`)
+
+                $(this.liquidContainer).append(liquidTable)
+
+                const addLiquidButton = $('<snp-button><snp-icon icon-name="file-invoice-dollar"></snp-icon> Generar Liquidación</snp-button>')
+                addLiquidButton.click(() => {
+                    snpLoadModalForm({
+                        type: 'liquidaciones',
+                        rel_ruta: this.route,
+                        entrega: globalThis.snpUser,
+                        saldo: `${liquidTotal || 0}`,
+                        pagos: `${pagosTotal || 0}`,
+                        prestamos: `${this.totalLoan || 0}`,
+                        gastos: `${this.totalExpense || 0}`
+                    }, () => {
+                        this.update()
+                    })
+                })
+                $(this.liquidContainer).append('<br>')
+                $(this.liquidContainer).append(addLiquidButton)
+            }
+
+            updateOthers() {
+                $(this._shadowRoot.getElementById('snp-home')).append('<h2>Gastos</h2>')
+                $(this._shadowRoot.getElementById('snp-home')).append('<h2>Prestamo</h2>')
+                $(this._shadowRoot.getElementById('snp-home')).append('<h2>Total Liquidación</h2>')
+                $(this._shadowRoot.getElementById('snp-home')).append('<h2>Descuadre</h2>')
+            }
+
+            connectedCallback() {
+                this.update()
+            }
+        }
+
+        ////////
+
+        if (!window.customElements.get("snp-home-orocampo-vendedor")) {
+            window.customElements.define("snp-home-orocampo-vendedor", SnporocampoHomeVendedor);
+        }
+    })();
+</script>

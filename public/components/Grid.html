@@ -1,0 +1,979 @@
+<template id="snp-grid-template">
+    <style>
+        .grid-pane-header {
+            display: flex;
+            align-items: center;
+            padding: 1em 0;
+            user-select: none;
+        }
+
+        .grid-title {
+            padding: 0 1em;
+            color: var(--snp-primary-color);
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            line-height: 0.9em;
+        }
+
+        .grid-title snp-icon {
+            margin-right: 0.4em;
+        }
+
+        .grid-header-buttons {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .grid-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .grid-table {
+            display: flex;
+            flex-grow: 1;
+            margin: 0 2em;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .grid-footer {
+            height: 2.5em;
+            margin: 0 2em 0.8em;
+            padding: 0.1em 0.5em;
+            background-color: var(--snp-primary-alpha2);
+            flex-direction: row;
+            display: flex;
+            align-items: center;
+        }
+
+        .grid-counter {
+            flex-grow: 1;
+            color: var(--snp-foreground-alpha5);
+        }
+
+        .grid-pager {
+            justify-self: flex-end;
+            align-self: flex-end;
+            display: flex;
+            align-items: center;
+            color: var(--snp-foreground-alpha5);
+        }
+
+        .grid-pager button {
+            border: none;
+        }
+
+        button.gpag-right {
+            border-radius: 0 var(--snp-normal-radius) var(--snp-normal-radius) 0;
+        }
+
+        button.gpag-left {
+            border-radius: var(--snp-normal-radius) 0 0 var(--snp-normal-radius);
+        }
+
+        .grid-pager .snp-input {
+            width: 30px;
+            text-align: center;
+            line-height: 1em;
+            height: 1em;
+            padding: 0.5em;
+            border: 1px solid var(--snp-primary-alpha4);
+        }
+
+        .grid-left-column {
+            width: fit-content;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s linear;
+        }
+
+        .grid-left-column.scrolled {
+            box-shadow: 1px 1px 9px 0px var(--snp-shadow-color);
+            position: relative;
+            z-index: 10000;
+        }
+
+        .grid-right-column {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            overflow-y: hidden;
+        }
+
+        .grid-left-column-header {
+            margin-bottom: var(--snp-grid-gap);
+        }
+
+        .grid-left-column-cells {
+            flex-grow: 1;
+        }
+
+        .grid-right-column-header {
+            grid-template-columns: var(--snp-grid-right-template-columns);
+            margin-bottom: var(--snp-grid-gap);
+        }
+
+        .grid-right-column-cells {
+            flex-grow: 1;
+        }
+
+        .grid-right-column-cells .grid-right-row {
+            display: grid;
+            grid-template-columns: var(--snp-grid-right-template-columns);
+            grid-gap: var(--snp-grid-gap);
+        }
+
+        .grid-right-column-cells {
+            flex-grow: 1;
+            display: grid;
+            flex-grow: 0;
+            width: fit-content;
+        }
+
+        .grid-left-header-row,
+        .grid-left-row {
+            padding-right: var(--snp-grid-gap);
+        }
+
+        .grid-left-row[snp-id]:not([snp-id=""]):nth-child(even) .grid-cell,
+        .grid-right-row[snp-id]:not([snp-id=""]):nth-child(even) .grid-cell {
+            background-color: var(--snp-primary-shade-alpha05);
+        }
+
+        .grid-left-row[snp-id]:not([snp-id=""]).hovered .grid-cell,
+        .grid-right-row[snp-id]:not([snp-id=""]).hovered .grid-cell {
+            background-color: var(--snp-primary-alpha1);
+        }
+
+        .grid-left-row[snp-id]:not([snp-id=""]).pressed .grid-cell,
+        .grid-right-row[snp-id]:not([snp-id=""]).pressed .grid-cell {
+            background-color: var(--snp-primary-alpha2);
+        }
+
+        .grid-row.selected {
+            background-color: var(--snp-primary-alpha7);
+        }
+
+        .grid-row.selected .grid-cell {
+            color: var(--snp-background-color);
+        }
+
+        .grid-row {
+            user-select: none;
+        }
+
+        .grid-cell {
+            display: flex;
+            align-items: center;
+            height: 24px;
+            overflow: hidden;
+            padding-left: 6px;
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .grid-left-row[snp-id] .grid-cell {
+            border-left: 2px solid orange;
+        }
+
+        .grid-left-row[synced]:not([synced="0"]) .grid-cell {
+            border-left: 2px solid transparent;
+        }
+
+        .grid-left-row .grid-cell {
+            border-left: 3px solid transparent;
+        }
+
+        .grid-left-row[data-synced="1"] .grid-cell::before {
+            content: " ";
+            background-color: green;
+            border-radius: 4px;
+            display: block;
+            height: 8px;
+            width: 8px;
+            position: absolute;
+            margin-left: -25px;
+            opacity: 0.5;
+        }
+
+        .grid-left-row[data-synced="0"] .grid-cell::before {
+            content: " ";
+            background-color: orange;
+            border-radius: 4px;
+            display: block;
+            height: 8px;
+            width: 8px;
+            position: absolute;
+            margin-left: -25px;
+            opacity: 0.5;
+        }
+
+        .grid-right-header-row {
+            display: grid;
+            grid-template-columns: var(--snp-grid-right-template-columns);
+            grid-gap: var(--snp-grid-gap);
+        }
+
+        .grid-header-cell {
+            align-items: center;
+            justify-content: center;
+            background-color: var(--snp-primary-shade-alpha2);
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .grid-header-filter {
+            padding: 0px 2px 3px;
+            pointer-events: initial;
+            user-select: initial;
+        }
+
+        .grid-header-filter .text-input {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--snp-background-alpha7);
+            padding: 0;
+            text-align: left;
+        }
+
+        .filter-wrap {
+            display: flex;
+            width: calc(100% - 4px);
+            background-color: var(--snp-background-color);
+        }
+
+        .filter-wrap snp-icon {
+            display: flex;
+            align-items: center;
+            padding: 3px;
+            opacity: 0.5;
+        }
+
+        .filter-wrap.tainted snp-icon {
+            opacity: 1;
+        }
+
+        .grid-pages input {
+            width: 3em;
+            text-align: center;
+        }
+
+        .grid-footer-counter {
+            flex-grow: 1;
+        }
+
+        .grid-cell[data-key="profit"],
+        .grid-cell[data-key="qty"] {
+            justify-content: center;
+        }
+
+        @media only screen and (max-width: 667px) {
+            .grid-table {
+                margin: 0 0.5em;
+            }
+
+            .grid-footer {
+                margin: 0 0.5em 0.8em;
+            }
+
+            .grid-header-buttons {
+                text-align: right;
+                padding-right: 0.5em;
+            }
+
+            .grid-header-buttons snp-button {
+                margin-bottom: 0.5em;
+                display: inline-block;
+            }
+
+            .grid-title {
+                padding: 0 0.5em;
+            }
+        }
+    </style>
+
+    <div class="snp-grid grid-container">
+        <div class="grid-pane-header">
+            <div class="grid-title">
+                <snp-icon id="module-icon"></snp-icon>
+                <span id="module-title"></span>
+            </div>
+            <div class="grid-header-buttons">
+                <snp-button id="add-button" color="green">
+                    <snp-icon icon-name="plus-circle"></snp-icon>
+                    <span class="button-text" id="add-button-label">Agregar</span>
+                </snp-button>
+                <snp-button id="delete-button" color="red">
+                    <snp-icon icon-name="minus-circle"></snp-icon>
+                    <span class="button-text" id="delete-button-label">Borrar</span>
+                </snp-button>
+                <snp-button id="clear-filters-button" color="gray" style="display: none">
+                    <snp-icon icon-name="broom"></snp-icon>
+                    <span class="button-text" id="clear-filters-button-label">Limpiar Filtros</span>
+                </snp-button>
+                <!-- snp-button id="bomb-button" color="gray">
+                    <snp-icon icon-name="bomb"></snp-icon>
+                </snp-button -->
+            </div>
+        </div>
+        <div class="grid-table">
+            <div class="grid-left-column">
+                <div class="grid-left-column-header"></div>
+                <div class="grid-left-column-cells"></div>
+            </div>
+            <div class="grid-right-column">
+                <div class="grid-right-column-header"></div>
+                <div class="grid-right-column-cells"></div>
+            </div>
+        </div>
+        <div class="grid-footer">
+            <div class="grid-footer-counter"></div>
+            <div class="grid-pages">
+                Página:
+                <snp-button id="prev-page-btn" color="gray">
+                    <snp-icon icon-name="chevron-left"></snp-icon>
+                </snp-button>
+
+                <input type="number" />
+
+                <snp-button id="next-page-btn" color="gray">
+                    <snp-icon icon-name="chevron-right"></snp-icon>
+                </snp-button>
+
+                de <span class="total-pages"></span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-grid-template");
+
+        class SnpGrid extends HTMLElement {
+            moduleInfo = null
+            rendered = false
+
+            constructor() {
+                super();
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.currPage = 1
+                this.footer = this._shadowRoot.querySelector('.grid-footer');
+
+                this.addButtonEvents()
+
+                this.rowCount = 4
+
+                document.addEventListener('dbSyncEnd', (e) => {
+                    if (this.moduleInfo.moduleKey == globalThis.snpCurrentModule) {
+                        this.updateData(false)
+                    }
+                })
+
+                document.addEventListener('localSaveDoc', (e) => {
+                    if (this.moduleInfo.moduleKey == e.detail.snptype) {
+                        this.updateData(false)
+                    }
+                })
+
+                document.addEventListener('snpNavigate', (e) => {
+                    if (this.moduleInfo.moduleKey == e.detail) {
+                        this.updateData(false)
+                    }
+                })
+
+                window.addEventListener('focus', (e) => {
+                    if (this.moduleInfo.moduleKey == globalThis.snpCurrentModule) {
+                        this.updateData()
+                    }
+                });
+
+                this.selectedDocs = {}
+                this.doubleClickTime = 300
+            }
+
+
+            showForm(doc) {
+                if (this.form) this.form.remove()
+                if (!this.moduleInfo) return
+                this.form = document.createElement('snp-form')
+                this.form.moduleInfo = this.moduleInfo
+                this._shadowRoot.appendChild(this.form);
+                if (doc) this.form.loadDoc(doc)
+                this.form.showForm()
+            }
+
+            addButtonEvents() {
+                const addButton = this._shadowRoot.querySelector('#add-button');
+                addButton.addEventListener('click', () => {
+                    this.showForm()
+                })
+
+                const deleteButton = this._shadowRoot.querySelector('#delete-button');
+                deleteButton.addEventListener('click', () => {
+                    const selKeys = Object.keys(this.selectedDocs)
+                    if (selKeys.length) {
+                        const strs = []
+                        selKeys.forEach((docKey) => {
+                            if (this.selectedDocs[docKey]['name']) {
+                                strs.push(this.selectedDocs[docKey]['name'])
+                            } else if (this.selectedDocs[docKey]['code']) {
+                                strs.push(this.selectedDocs[docKey]['code'])
+                            } else {
+                                strs.push(this.selectedDocs[docKey]['snpId'])
+                            }
+                        })
+                        if (confirm(`¿Borrar los siguientes registros? \n${strs.join("\n")}`)) {
+                            this.doDeleteDocs(this.selectedDocs)
+                        }
+                    } else {
+                        alert('Por favor seleccione registros a borrar.')
+                    }
+                })
+
+
+                const clearFiltersButton = this._shadowRoot.querySelector('#clear-filters-button');
+                clearFiltersButton.addEventListener('click', () => {
+                    Object.keys(this.filterElements).forEach((fieldKey) => {
+                        this.filterElements[fieldKey].value = ''
+                    })
+
+                    this.updateData()
+                })
+            }
+
+            connectedCallback() {
+                if (this.moduleInfo && !this.rendered) {
+                    this.render(this.moduleInfo)
+                    this.updateData()
+                    this.rendered = true
+
+                    document.addEventListener('docAdded', (e) => {
+                        var doc = e.detail
+                        if (doc.snptype && doc.snptype == this.moduleInfo.moduleKey) {
+                            this.updateData()
+                        }
+                    })
+
+                    window.addEventListener("resize", () => {
+                        if (this.windowResizeTimeout) {
+                            clearTimeout(this.windowResizeTimeout);
+                        }
+
+                        this.windowResizeTimeout = setTimeout(() => {
+                            this.makeRows()
+                            this.updateData()
+                        }, 500);
+                    });
+                } else if (this.rendered) {
+                    this.updateData()
+                }
+            }
+
+            async doDeleteDocs(docs) {
+                const docArr = []
+                Object.keys(docs).forEach((docKey) => {
+                    docArr.push(docs[docKey])
+                })
+                await snpdb.deleteDocs(docArr)
+                console.log('going to update')
+                this.updateData()
+            }
+
+            async updateData(presync = true) {
+                clearTimeout(this.updateTimeout)
+                this.updateTimeout = setTimeout(async () => {
+
+                    const filters = {}
+                    var hasFilters = false
+
+                    Object.keys(this.filterElements).forEach((fieldKey) => {
+                        const filterValue = $.trim(this.filterElements[fieldKey].value)
+                        if (filterValue) {
+                            filters[fieldKey] = filterValue
+                            hasFilters = true
+                        }
+                    })
+
+                    if (hasFilters) {
+                        this._shadowRoot.querySelector('#clear-filters-button').style.display = 'inline-block'
+                    } else {
+                        this._shadowRoot.querySelector('#clear-filters-button').style.display = 'none'
+                    }
+                    
+                    const data = await snpdb.find({
+                        snptype: this.moduleInfo.moduleKey,
+                        amount: this.rowCount,
+                        offset: (this.currPage - 1) * this.rowCount,
+                        filters: filters,
+                        filterOperator: 'AND',
+                        live: false
+                    })
+
+                    this.renderData(data)
+
+                    if (presync) snpdb.sync()
+                }, 100)
+            }
+
+
+            renderData(data) {
+                this.data = data;
+                this.renderedIds = []
+
+                for (var i = 0; i < this.rowCount; i++) {
+                    if (this.data.docs[i] && 'snpId' in this.data.docs[i]) {
+                        this.renderRowData(this.data.docs[i], i);
+                        this.renderedIds.push(this.data.docs[i].snpId)
+                    } else {
+                        this.renderRowData(null, i);
+                    }
+                }
+
+                this.updateFooter(data);
+
+                this.markSelectedDocs()
+            };
+
+            renderRowData(rowData, rowIndex) {
+                var leftRow = this._shadowRoot.querySelector(`.grid-left-row[data-row-index="${rowIndex}"]`);
+                var rightRow = this._shadowRoot.querySelector(`.grid-right-row[data-row-index="${rowIndex}"]`);
+
+                if (!rowData) {
+                    leftRow.removeAttribute("snp-id");
+                    rightRow.removeAttribute("snp-id");
+                    rightRow.removeAttribute("synced");
+                    var leftCells = $(leftRow).find(`[data-key]`);
+                    var rightCells = $(rightRow).find(`[data-key]`);
+                    leftCells.html('');
+                    rightCells.html('');
+                    return;
+                }
+
+                leftRow.setAttribute("snp-id", rowData.snpId);
+                rightRow.setAttribute("snp-id", rowData.snpId);
+                $(leftRow).data('doc', rowData)
+                $(rightRow).data('doc', rowData)
+
+                leftRow.setAttribute('synced', rowData.synced)
+
+                this.renderCellData(rowData, leftRow, rightRow)
+            };
+
+
+            renderCellData(rowData, leftRow, rightRow) {
+                Object.keys(this.moduleInfo.fields).forEach((fieldKey, fieldIndex) => {
+                    if (fieldIndex) {
+                        var cell = $(rightRow).find(`[data-key="${fieldKey}"]`);
+                    } else {
+                        var cell = $(leftRow).find(`[data-key="${fieldKey}"]`);
+                    }
+
+                    const fieldData = this.moduleInfo.fields[fieldKey]
+                    const cellVal = this.getFieldValueHtml(rowData, fieldKey, fieldData)
+
+                    cell.html(cellVal); //
+                });
+            }
+
+
+            updateRowData(rowData) {
+                var leftRow = this._shadowRoot.querySelector(`.grid-left-row[snp-id="${rowData.snpId}"]`);
+                var rightRow = this._shadowRoot.querySelector(`.grid-right-row[snp-id="${rowData.snpId}"]`);
+                $(leftRow).data('doc', rowData)
+                $(rightRow).data('doc', rowData)
+                this.renderCellData(rowData, leftRow, rightRow)
+            }
+
+
+            getFieldValueHtml(doc, fieldKey, fieldInfo) {
+
+                if (!doc[fieldKey]) return ''
+                const tag = 'snp-input-' + fieldInfo.type
+                const inputElement = document.createElement(tag)
+                if ('init' in inputElement) {
+                    fieldInfo.fieldKey = fieldKey
+                    inputElement.init(fieldInfo)
+                    inputElement.doc = doc
+                    var textValue = inputElement.textValue
+                    if (textValue.replace
+                        && fieldKey in this.filterElements
+                        && this.filterElements[fieldKey].value) {
+                        const filterVal = this.filterElements[fieldKey].value
+                        const reg = new RegExp('(' + filterVal + ')', 'i')
+                        textValue = textValue.replace(reg, '<b>$1</b>')
+                    }
+                    return textValue
+                }
+                return ''
+                // if ('initField' in inputElement) inputElement.initField(rowData)
+                // inputElement.fieldInfo = fieldInfo
+                // inputElement.value = rowData[fieldKey]
+                // return inputElement.textValue; 
+            };
+
+
+            render(moduleInfo) {
+                const modTitle = this._shadowRoot.getElementById('module-title')
+                const modIcon = this._shadowRoot.getElementById('module-icon')
+                const addButtonLabel = this._shadowRoot.getElementById('add-button-label')
+                const deleteButtonLabel = this._shadowRoot.getElementById('delete-button-label')
+
+                modTitle.innerHTML = moduleInfo.name
+                modIcon.setAttribute('icon-name', moduleInfo.icon)
+
+                // addButtonLabel.innerHTML = 'Agregar ' + moduleInfo.singular
+                // deleteButtonLabel.innerHTML = 'Borrar ' + moduleInfo.singular
+
+
+                this.moduleInfo = moduleInfo
+
+                this.grid = this._shadowRoot.querySelector(`.snp-grid`)
+
+                this.setColumnWidths()
+                this.makeHeaders()
+                this.makeRows()
+                this.makeFooter()
+                this.makeHeaderFilters()
+            }
+
+            setColumnWidths() {
+                var gridColumns = [];
+                const leftColHeader = this._shadowRoot.querySelector(".grid-left-column-header")
+                const leftColCells = this._shadowRoot.querySelector(".grid-left-column-cells")
+
+                Object.keys(this.moduleInfo.fields).forEach((fieldKey, index) => {
+                    const fieldData = this.moduleInfo.fields[fieldKey]
+
+                    if (!index) {
+                        if (fieldData.grid && fieldData.label) {
+                            leftColHeader.style.width = `${fieldData.grid * 10}px`
+                            leftColCells.style.width = `${fieldData.grid * 10}px`
+                        }
+                    } else {
+                        if (fieldData.grid && fieldData.label) {
+                            gridColumns.push(`${fieldData.grid * 10}px`);
+                        }
+                    }
+                });
+
+                this._shadowRoot.querySelector('.snp-grid').style.setProperty(
+                    "--snp-grid-right-template-columns",
+                    gridColumns.join(" ")
+                );
+            }
+
+
+            makeHeaders() {
+                const leftRow = document.createElement('div')
+                leftRow.classList.add('grid-left-header-row')
+
+                const rightRow = document.createElement('div')
+                rightRow.classList.add('grid-right-header-row')
+
+                this._shadowRoot.querySelector(".grid-left-column-header").append(leftRow);
+                this._shadowRoot.querySelector(".grid-right-column-header").append(rightRow);
+
+                Object.keys(this.moduleInfo.fields).forEach((fieldKey, fieldIndex) => {
+                    const fieldData = this.moduleInfo.fields[fieldKey]
+
+                    if (!fieldData.grid) return;
+                    if (!fieldData.label) return;
+
+                    var rowElement = rightRow;
+
+                    if (!fieldIndex) {
+                        rowElement = leftRow;
+                    }
+
+                    var cellElement = document.createElement('div')
+                    cellElement.setAttribute('data-key', fieldKey)
+                    cellElement.classList.add('grid-cell')
+                    cellElement.classList.add('grid-header-cell')
+                    cellElement.innerHTML = fieldData.label
+                    rowElement.append(cellElement);
+                });
+            };
+
+
+            makeHeaderFilters() {
+                const leftRow = document.createElement('div')
+                leftRow.classList.add('grid-left-header-row')
+
+                const rightRow = document.createElement('div')
+                rightRow.classList.add('grid-right-header-row')
+
+                this._shadowRoot.querySelector(".grid-left-column-header").append(leftRow);
+                this._shadowRoot.querySelector(".grid-right-column-header").append(rightRow);
+
+
+                this.filterElements = {}
+
+                Object.keys(this.moduleInfo.fields).forEach((fieldKey, fieldIndex) => {
+                    const fieldData = this.moduleInfo.fields[fieldKey]
+
+                    if (!fieldData.grid) return;
+                    if (!fieldData.label) return;
+
+                    var rowElement = rightRow;
+
+                    if (!fieldIndex) {
+                        rowElement = leftRow;
+                    }
+
+                    var cellElement = document.createElement('div')
+                    cellElement.setAttribute('data-key', fieldKey)
+                    cellElement.classList.add('grid-cell')
+                    cellElement.classList.add('grid-header-cell')
+                    cellElement.classList.add('grid-header-filter')
+
+
+                    const tag = 'snp-input-' + fieldData.type
+                    const inputElement = document.createElement(tag)
+                    const filterElement = inputElement.filterElement
+
+                    if (filterElement) {
+                        filterElement.addEventListener('input', () => {
+                            this.updateData()
+                        })
+
+                        this.filterElements[fieldKey] = filterElement
+
+                        cellElement.appendChild(filterElement)
+                    }
+
+                    rowElement.append(cellElement);
+
+                });
+            };
+
+
+            makeRows() {
+
+                const leftColCells = this._shadowRoot.querySelector(".grid-left-column-cells")
+                const rightColCells = this._shadowRoot.querySelector(".grid-right-column-cells")
+
+                leftColCells.innerHTML = "";
+                rightColCells.innerHTML = "";
+
+                var cellHeight = 24;
+                var scrollBarSize = 10;
+                var availableRowPlaces = Math.floor(
+                    (this._shadowRoot.querySelector(".grid-left-column-cells").getBoundingClientRect().height - scrollBarSize) /
+                    cellHeight)
+
+                this.rowCount = Math.max(5, availableRowPlaces) - 1;
+
+                for (var rowIndex = 0; rowIndex < this.rowCount; rowIndex++) {
+                    var leftRow = document.createElement('div')
+                    leftRow.classList.add('grid-row')
+                    leftRow.classList.add('grid-left-row')
+                    leftRow.setAttribute('data-row-index', rowIndex)
+
+                    var rightRow = document.createElement('div')
+                    rightRow.classList.add('grid-row')
+                    rightRow.classList.add('grid-right-row')
+                    rightRow.setAttribute('data-row-index', rowIndex)
+
+                    leftColCells.appendChild(leftRow);
+                    rightColCells.appendChild(rightRow);
+
+                    this.makeCells(rowIndex, rightRow, leftRow)
+                }
+
+                this.addRowEvents()
+            };
+
+
+            makeCells(rowIndex, rightRow, leftRow) {
+                Object.keys(this.moduleInfo.fields).forEach((fieldId, fieldIndex) => {
+                    const fieldData = this.moduleInfo.fields[fieldId]
+
+                    if (!fieldData.grid) return;
+                    if (!fieldData.label) return;
+
+                    var rowElement = fieldIndex ? rightRow : leftRow;
+
+                    var cellId = `grid-cell-${rowIndex}-${fieldIndex}`;
+
+                    var cellElement = document.createElement('snp-grid-cell-' + (fieldData.type || 'notype'))
+                    cellElement.setAttribute('id', cellId)
+                    cellElement.setAttribute('data-row', rowIndex)
+                    cellElement.setAttribute('data-key', fieldId)
+                    cellElement.classList.add('grid-cell')
+
+                    rowElement.appendChild(cellElement);
+                });
+            }
+
+            makeFooter() {
+                const prevPageBtn = this._shadowRoot.querySelector('#prev-page-btn')
+                const nextPageBtn = this._shadowRoot.querySelector('#next-page-btn')
+                const pageInput = this._shadowRoot.querySelector('.grid-pages input')
+
+                prevPageBtn.addEventListener('click', () => {
+                    if (this.currPage > 1) {
+                        this.currPage--
+                        this.updateData()
+                    }
+                })
+
+                nextPageBtn.addEventListener('click', () => {
+                    this.totalPages = Math.ceil(this.data.count / this.rowCount)
+                    if (this.currPage < this.totalPages) {
+                        this.currPage++
+                        this.updateData()
+                    }
+                })
+
+                pageInput.addEventListener('change', () => {
+                    clearTimeout(this.setPageTimeout)
+                    this.setPageTimeout = setTimeout(() => {
+                        const pageNumber = pageInput.value
+                        this.currPage = pageNumber ? pageNumber : 1
+                        this.updateData()
+                    }, 500)
+                });
+            }
+
+            updateFooter(data) {
+                const counter = this._shadowRoot.querySelector('.grid-footer-counter')
+                const offset = (this.currPage - 1) * this.rowCount
+                counter.innerHTML = `${offset + 1} a ${Math.min(offset + this.rowCount, data.count)} de ${data.count}`
+
+                this.totalPages = Math.ceil(this.data.count / this.rowCount)
+                const totalPagesElm = this._shadowRoot.querySelector('.total-pages')
+                totalPagesElm.innerHTML = this.totalPages
+
+                this.pageInput = this._shadowRoot.querySelector('.grid-pages input')
+                if (!$(this.pageInput).is(':focus')) {
+                    this.pageInput.value = this.currPage;
+                }
+
+                this.pageInput.setAttribute('min', 1)
+                this.pageInput.setAttribute('max', this.totalPages)
+            }
+
+            handleSelection(event, doc) {
+                if (!doc) return
+                if (event.shiftKey) {
+                    if (!doc) return;
+                    if (doc.snpId in this.selectedDocs) {
+                        delete this.selectedDocs[doc.snpId]
+                    } else {
+                        this.selectedDocs[doc.snpId] = doc
+                    }
+                } else {
+                    // if (!doc) {
+                    //     this.selectedDocs = {}
+                    //     return;
+                    // }
+                    // if (Object.keys(this.selectedDocs).length > 0) {
+                    //     this.selectedDocs = {}
+                    //     this.selectedDocs[doc.snpId] = doc
+                    // } else {
+                    if (doc.snpId in this.selectedDocs) {
+                        if (Object.keys(this.selectedDocs).length > 1) {
+                            this.selectedDocs = {}
+                            this.selectedDocs[doc.snpId] = doc
+                        } else {
+                            delete this.selectedDocs[doc.snpId]
+                        }
+                    } else {
+                        this.selectedDocs = {}
+                        this.selectedDocs[doc.snpId] = doc
+                    }
+                    //}
+                }
+
+                this.markSelectedDocs()
+            }
+
+            markSelectedDocs() {
+                const selectedRows = $(this.grid).find(`.grid-row.selected`)
+                selectedRows.removeClass('selected')
+
+                Object.keys(this.selectedDocs).forEach((docSnpId) => {
+                    if (!this.renderedIds.includes(docSnpId)) {
+                        delete this.selectedDocs[docSnpId]
+                    } else {
+                        const rows = $(this.grid).find(`[snp-id=${docSnpId}]`)
+                        rows.addClass('selected')
+                    }
+                })
+            }
+
+            addRowEvents() {
+                let prevDownTime = 0
+
+                const grid = this._shadowRoot.querySelector(`.snp-grid`)
+
+                $(grid).find('.grid-row')
+                    .off()
+                    .mousedown((e) => {
+                        var ridx = $(e.currentTarget).data("row-index");
+                        $(grid).find(`[data-row-index="${ridx}"]`).addClass("pressed");
+                    })
+                    .mouseup((e) => {
+                        var ridx = $(e.currentTarget).data("row-index");
+                        $(grid).find(`[data-row-index="${ridx}"]`).removeClass("pressed");
+                    })
+                    .click((e) => {
+                        const doc = $(e.target).data('doc')
+                        if (!doc) {
+                            this.selectedDocs = {}
+                            this.markSelectedDocs()
+                            return
+                        }
+                        const downTime = Date.now()
+                        if (downTime - prevDownTime < this.doubleClickTime) {
+                            this.selectedDocs = {}
+                            this.selectedDocs[doc.snpId] = doc
+                            this.showForm(doc)
+                            return
+                        }
+                        prevDownTime = downTime
+
+                        this.handleSelection(e, $(e.target).data('doc'))
+                    })
+                    .hover(
+                        function (e) {
+                            var ridx = $(e.currentTarget).data("row-index");
+                            $(grid).find(`[data-row-index="${ridx}"]`).addClass("hovered");
+                        },
+                        function (e) {
+                            var ridx = $(e.currentTarget).data("row-index");
+                            $(grid).find(`[data-row-index="${ridx}"]`).removeClass("hovered");
+                        }
+                    )
+
+                //
+                const gridRightCol = this.grid.querySelector('.grid-right-column')
+                gridRightCol.addEventListener("scroll", (e) => {
+                    if (gridRightCol.scrollLeft) {
+                        $(this.grid).find(".grid-left-column").addClass("scrolled");
+                    } else {
+                        $(this.grid).find(".grid-left-column").removeClass("scrolled");
+                    }
+                });
+            }
+
+        }
+
+        if (!window.customElements.get("snp-grid")) {
+            window.customElements.define("snp-grid", SnpGrid);
+        }
+    })();
+
+</script>

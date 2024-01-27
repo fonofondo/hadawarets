@@ -1,0 +1,80 @@
+{
+    "modules": {
+        "users": {
+            "import": "true",
+            "type": "grid",
+            "name": "Personal",
+            "singular": "Trabajador",
+            "icon": "address-card",
+            "fields": {
+                "name": {
+                    "label": "Nombre",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "nickname": {
+                    "label": "Nombre de Usuario",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "cargo": {
+                    "label": "Cargo",
+                    "type": "select",
+                    "grid": "20",
+                    "options": [
+                        "Administrador​",
+                        "Vendedor"
+                    ]
+                },
+                "email": {
+                    "label": "E-Mail",
+                    "type": "email",
+                    "grid": "20"
+                },
+                "password": {
+                    "label": "Clave",
+                    "type": "password",
+                    "silent": "1"
+                },
+                "password2": {
+                    "label": "Confirmar Clave",
+                    "type": "password",
+                    "silent": "1"
+                },
+                "phone": {
+                    "label": "Teléfono",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "address": {
+                    "label": "Dirección",
+                    "grid": "20",
+                    "type": "text"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                },
+                "permissions": {
+                    "label": "Permisos",
+                    "type": "permissions"
+                }
+            }
+        }
+    },
+    "style": {
+        "main_menu_font_size": "1em",
+        "home_menu_size": "1.2em",
+        "loader_padding": "5em  0.4em 0",
+        "loader_size": "18em",
+        "main_menu_pad": "0.1em",
+        "main_menu_vmargin": "0.2em",
+        "main_menu_top": "16.5em",
+        "viewport_color": "#F0F0F0",
+        "base_color": "#405974"
+    },
+    "settings": {
+        "system_name": "CRM",
+        "db_driver": "ne"
+    }
+}

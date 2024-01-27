@@ -1,0 +1,61 @@
+<template id="snp-datetime-input-template">
+    <style>
+        input {
+            border: none;
+            outline: none;
+            width: 100%;
+            padding: 4px;
+        }
+
+        .input-icon {
+            display: none;
+        }
+    </style>
+    <input type="datetime-local" class="input" />
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-datetime-input-template");
+
+        class SnpDatetimeInput extends SnpTextInput {
+            constructor() {
+                super();
+                this.wrap.querySelector(".input").remove()
+                this.wrap.appendChild(template.content.cloneNode(true));
+                this.inputElement = this.wrap.querySelector("input")
+            }
+
+            init(fieldInfo) {
+                fieldInfo.icon = 'calendar-alt';
+                super.init(fieldInfo)
+            }
+
+            reset() {
+                super.reset()
+                if (!this.fieldValue && this.fieldInfo && (this.fieldInfo.default == 'now')) {
+                    setTimeout(() => {
+                        this.inputElement.value = nowDateTime()
+                        this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
+                    }, 200)
+                }
+            }
+
+            render() {
+                super.render()
+                if (!this.fieldValue && this.fieldInfo && (this.fieldInfo.default == 'now')) {
+                    setTimeout(() => {
+                        this.inputElement.value = nowDateTime()
+                        this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
+                    }, 200)
+                }
+            }
+        }
+
+        if (!window.customElements.get("snp-input-datetime")) {
+            window.customElements.define("snp-input-datetime", SnpDatetimeInput);
+        }
+    })();
+
+</script>

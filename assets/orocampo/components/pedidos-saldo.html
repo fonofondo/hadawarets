@@ -1,0 +1,81 @@
+
+
+<!-- pedidos saldo input -->
+<script>
+    (() => {
+
+        class LaEstrelliltaPedidosSaldoInput extends SnpTextInput {
+            constructor() {
+                super();
+                this.saldo = 0
+            }
+
+            initField(doc) {
+                this.doc = doc
+            }
+
+            async updateRels() {
+                return new Promise(async (resolve) => {
+                    if (!this.doc) {
+                        resolve('-')
+                    }
+
+                    const result = await snpdb.find({
+                        type: 'pagos',
+                        live: false,
+                        filters: {
+                            'rel_pedidos_code.snpId': this.doc.snpId,
+                        }
+                    })
+
+                    this.saldo = 0
+                    if (result.count) {
+                        this.pagos = result.docs
+                        this.pagos.forEach((pago) => {
+                            this.saldo += parseFloat(pago.suma)
+                        })
+                    }
+
+                    const orderTotal = this.doc['matrix_productos']['total'] ? this.doc['matrix_productos']['total'] : 0
+
+                    this.saldo = -(orderTotal - this.saldo)
+                    this.value = this.saldo
+                    resolve(this.saldo)
+                })
+            }
+
+            get value() {
+                return this.saldo || 0
+            }
+
+            set value(val) {
+                this.saldo = val
+                this.inputElement.textContent = this.saldo ? formatMoney((-this.saldo)) : ''
+            }
+
+            reset() {
+                super.reset()
+                this.saldo = 0
+                this.pagos = []
+                this.inputElement.textContent = ''
+            }
+
+            get textValue() {
+
+                return this.saldo ? formatMoney((-this.saldo)) : ''
+            }
+
+            render(fieldInfo) {
+                fieldInfo.icon = 'list';
+                fieldInfo.readonly = 1;
+                this.passedFieldInfo = fieldInfo
+                super.render(fieldInfo)
+            }
+        }
+
+        if (!window.customElements.get("snp-input-orocampo-pedidos-saldo")) {
+            window.customElements.define("snp-input-orocampo-pedidos-saldo", LaEstrelliltaPedidosSaldoInput);
+        }
+    })();
+
+</script>

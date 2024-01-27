@@ -1,0 +1,76 @@
+<template id="snp-orocampo-discounts-row-input-template">
+    <style>
+        div {
+            display: table-cell;
+            padding: 0.3em;
+            border-bottom: 1px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+            vertical-align: middle;
+        }
+
+        input {
+            width: 5em;
+            text-align: right;
+        }
+    </style>
+    <div class="product-name"></div>
+    <div class="product-price"></div>
+    <div>
+        <input type="tel" />
+    </div>
+    <div class="product-delete">
+        <snp-icon icon-name="times"></snp-icon>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-orocampo-discounts-row-input-template");
+
+        class SnporocampoDicountsRow extends HTMLElement {
+            constructor() {
+                super()
+                this._qty = 1
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+            }
+
+            get value() {
+                return this.autonumeric.getNumericString()
+            }
+
+            init(productInfo, order) {
+                this._shadowRoot.querySelector('.product-name').textContent = productInfo.name
+                this._shadowRoot.querySelector('.product-price').textContent = formatMoney(productInfo.price)
+
+                // this._shadowRoot.querySelector('.product-qty input').addEventListener('change', () => {
+                //     this._qty = parseInt(this._shadowRoot.querySelector('.product-qty input').value)
+                //     totalElement.textContent = parseInt(productInfo.price) * this._qty
+                //     fireEvent(document, 'orderProductQtyChange', { product: productInfo, order: order, qty: this._qty })
+                // })
+
+                this._shadowRoot.querySelector('input').value = productInfo.discounted_price
+
+                this.autonumeric = new AutoNumeric(this._shadowRoot.querySelector('input'), {
+                    currencySymbol: '$',
+                    decimalCharacter: ',',
+                    digitGroupSeparator: '.',
+                    decimalPlaces: 0
+                });
+
+
+
+                this._shadowRoot.querySelector('.product-delete').addEventListener('click', () => {
+                    this.parentElement.removeChild(this)
+                    fireEvent(document, 'discountProductDeleted', { product: productInfo, order: order })
+                })
+            }
+        }
+
+        if (!window.customElements.get("orocampo-discounts-row")) {
+            window.customElements.define("orocampo-discounts-row", SnporocampoDicountsRow);
+        }
+    })();
+
+</script>

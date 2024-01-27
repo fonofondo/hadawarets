@@ -1,0 +1,504 @@
+{
+    "modules": {
+        "contacts": {
+            "import": "true",
+            "type": "grid",
+            "name": "Clientes",
+            "singular": "Cliente",
+            "icon": "handshake",
+            "fields": {
+                "name": {
+                    "label": "Nombre",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "saldo": {
+                    "label": "Saldo",
+                    "type": "cliente-saldo",
+                    "grid": "20",
+                    "live": true
+                },
+                "phone": {
+                    "label": "Teléfono",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "address": {
+                    "label": "Dirección",
+                    "grid": "20",
+                    "type": "text"
+                },
+                "email": {
+                    "label": "E-Mail",
+                    "type": "email",
+                    "grid": "20"
+                },
+                "cel": {
+                    "label": "Celular",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                },
+                "client_history": {
+                    "label": "Historial",
+                    "type": "history",
+                    "grid": "20",
+                    "history_modules": [
+                    	{"module": "pedidos", "name":"Pedido", "field": "rel_contacts_name.snpId"},
+                    	{"module": "pagos", "name":"Pago", "field": "rel_contacts_name.snpId"}
+                    ]
+                },
+                "discounts": {
+                    "label": "Descuentos",
+                    "type": "text",
+                    "grid": "20",
+                    "autocomp": "productos.name",
+                    "products_module": "productos"
+                }
+            }
+        },
+        "pedidos": {
+            "import": "true",
+            "type": "grid",
+            "name": "Pedidos",
+            "singular": "Pedido",
+            "icon": "receipt",
+            "fields": {
+                "code": {
+                    "autoinc": "1",
+                    "incyear": "before",
+                    "halfwidth": "si",
+                    "placeholder": "[VALOR AUTOMÁTICO]",
+                    "readonly": "1",
+                    "label": "Código",
+                    "type": "text",
+                    "grid": "16",
+                    "required": 1
+                },
+                "rel_contacts_name": {
+                    "autocomp": "contacts.name",
+                    "label": "Cliente",
+                    "type": "rel",
+                    "grid": "20",
+                    "required": 1
+                },
+                "matrix_productos": {
+                    "label": "Productos",
+                    "type": "order",
+                    "grid": "20",
+                    "autocomp": "productos.name",
+                    "products_module": "productos"
+                },
+                "pagos_history": {
+                    "label": "Pagos",
+                    "type": "paymenthistory",
+                    "grid": "20",
+                    "history_modules": [
+                    	{"module": "pagos", "name":"Pago", "field": "rel_pedidos.snpId", "addField": "suma"}
+                    ]
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "pagos": {
+            "import": "true",
+            "type": "grid",
+            "name": "Pagos",
+            "singular": "Pago",
+            "icon": "money-check-alt",
+            "fields": {
+                "fecha_de_pago": {
+                    "grid": "15",
+                    "label": "Fecha",
+                    "type": "datetime",
+                    "default": "now"
+                },
+                "rel_pedidos": {
+                    "autocomp": "pedidos.code",
+                    "label": "Pedido",
+                    "type": "rel",
+                    "grid": "20"
+                },
+                "rel_contacts_name": {
+                    "autocomp": "contacts.name",
+                    "label": "Cliente",
+                    "type": "rel",
+                    "grid": "20",
+                    "required": 1
+                },
+                "suma": {
+                    "label": "Efectivo",
+                    "type": "currency",
+                    "grid": "20"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "gastos": {
+            "import": "true",
+            "type": "grid",
+            "name": "Gastos",
+            "singular": "Gasto",
+            "icon": "donate",
+            "fields": {
+                "fecha": {
+                    "grid": "15",
+                    "label": "Fecha",
+                    "type": "datetime",
+                    "default": "now"
+                },
+                "ruta": {
+                    "grid": "15",
+                    "label": "Ruta",
+                    "autocomp": "rutas.name",
+                    "type": "rel"
+                },
+                "usuario": {
+                    "grid": "15",
+                    "label": "Usuario",
+                    "type": "rel",
+                    "readonly": 1,
+                    "default": "snpUser"
+                },
+                "concepto": {
+                    "grid": "15",
+                    "label": "Concepto",
+                    "type": "select",
+                    "options": {
+                        "1": "Transporte",
+                        "2": "Alimentación",
+                        "3": "Papelería",
+                        "4": "Otro"
+                    }
+                },
+                "suma": {
+                    "grid": "10",
+                    "label": "Suma",
+                    "type": "currency"
+                },
+                "notas": {
+                    "grid": "20",
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "liquidaciones": {
+            "import": "true",
+            "type": "grid",
+            "name": "Liquidaciones",
+            "singular": "Liquidación",
+            "icon": "file-invoice-dollar",
+            "fields": {
+                "fecha_de_pago": {
+                    "label": "Fecha de Recepción",
+                    "type": "datetime",
+                    "grid": "20",
+                    "default": "now"
+                },
+                "rel_ruta": {
+                    "autocomp": "rutas.name",
+                    "label": "Ruta",
+                    "type": "rel",
+                    "grid": "20"
+                },
+                "entrega": {
+                    "autocomp": "users.name",
+                    "label": "Vendedor",
+                    "type": "rel",
+                    "grid": "20"
+                },
+                "recibe": {
+                    "autocomp": "users.name",
+                    "label": "Administrador",
+                    "type": "rel",
+                    "grid": "20"
+                },
+                "pagos": {
+                    "label": "Pagos",
+                    "type": "currency",
+                    "grid": "10"
+                },
+                "gastos": {
+                    "label": "Gastos",
+                    "type": "currency",
+                    "grid": "10"
+                },
+                "prestamos": {
+                    "label": "Prestamos",
+                    "type": "currency",
+                    "grid": "10"
+                },
+                "saldo": {
+                    "label": "Saldo",
+                    "type": "currency",
+                    "grid": "10"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "productos": {
+            "import": "true",
+            "type": "grid",
+            "name": "Productos",
+            "singular": "Producto",
+            "icon": "boxes",
+            "fields": {
+                "name": {
+                    "grid": "20",
+                    "label": "Nombre del Producto",
+                    "type": "text"
+                },
+                "IVA (%)": {
+                    "grid": "10",
+                    "label": "Iva",
+                    "type": "percent"
+                },
+                "notes": {
+                    "grid": "10",
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "inventory": {
+            "import": "true",
+            "type": "grid",
+            "name": "Inventario",
+            "singular": "Movimiento",
+            "icon": "pallet",
+            "fields": {
+                "rel_productos": {
+                    "autocomp": "productos.name",
+                    "grid": "20",
+                    "label": "Nombre del Producto",
+                    "type": "rel"
+                },
+                "fecha_de_ingreso": {
+                    "grid": "15",
+                    "label": "Fecha de Ingreso",
+                    "type": "datetime",
+                    "default": "now"
+                },
+                "qty": {
+                    "grid": "10",
+                    "label": "Cantidad (Unidades)",
+                    "type": "number"
+                },
+                "weight": {
+                    "grid": "10",
+                    "label": "Peso Total (Kg)",
+                    "type": "number"
+                },
+                "cost": {
+                    "grid": "10",
+                    "label": "Costo Total",
+                    "type": "currency"
+                },
+                "price": {
+                    "grid": "10",
+                    "label": "Precio de Venta por Kg",
+                    "type": "currency"
+                },
+                "fechadecaducidad": {
+                    "grid": "10",
+                    "label": "Fecha de Caducidad",
+                    "type": "date"
+                },
+                "notes": {
+                    "grid": "10",
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "reports": {
+            "type": "grid",
+            "name": "Reportes",
+            "singular": "Reporte",
+            "icon": "chart-bar",
+            "fields": {
+                "type": {
+                    "label": "Tipo de Reporte",
+                    "type": "select",
+                    "grid": "30",
+                    "options": [
+                        "Listado de Clientes",
+                        "Listado de Examenes",
+                        "Cantidad de Paquetes",
+                        "Cantidad de Paquetes Aguas",
+                        "Cantidad de Paquetes Alimentos",
+                        "Examenes Microbiologicos",
+                        "Examenes Fisicoquimicos",
+                        "Parametros vs Examenes",
+                        "Facturacion",
+                        "Costos paquetes Microbiologicos",
+                        "Costos paquetes Fisicoquimicos",
+                        "Costos Analisis mensual",
+                        "Costo de Insumos por Paquetes",
+                        "Costo de Insumos por Analisis",
+                        "Paquetes con Analisis",
+                        "Precios de Paquetes",
+                        "Inventarios",
+                        "Cantidad de Analsis",
+                        "Cantidad de Analsis Aguas",
+                        "Cantidad de Analsis Alimentos",
+                        "Gasto de Insumos",
+                        "Insumos Mibrobiología",
+                        "Insumos Fisicoquimica",
+                        "Insumos Bromatología",
+                        "Actividad de Clientes",
+                        "Oportunidad de entrega alimentos",
+                        "Oportunidad de entrega aguas",
+                        "Descripción paquetes",
+                        "Responsables cotizaciones",
+                        "Muestras por cliente"
+                    ]
+                },
+                "date_from": {
+                    "halfwidth": "1",
+                    "label": "Desde",
+                    "type": "date",
+                    "grid": "12"
+                },
+                "date_to": {
+                    "label": "Hasta",
+                    "type": "date",
+                    "grid": "12"
+                },
+                "date_caduce": {
+                    "label": "Fecha de Vencimiento",
+                    "type": "date",
+                    "grid": "12"
+                },
+                "rel_examenes_nombre": {
+                    "label": "Examen",
+                    "grid": "12",
+                    "autocomp": "examenes.nombre",
+                    "type": "rel"
+                },
+                "rel_empresas_nombre": {
+                    "label": "Cliente",
+                    "grid": "12",
+                    "autocomp": "empresas.nombre",
+                    "type": "rel"
+                }
+            },
+            "reports": {
+                "choise_report": {
+                    "type": "chooseEntriesToInvoice",
+                    "icon": "bar-chart",
+                    "label": "Generar Reporte"
+                }
+            }
+        },
+        "users": {
+            "import": "true",
+            "type": "grid",
+            "name": "Personal",
+            "singular": "Trabajador",
+            "icon": "address-card",
+            "fields": {
+                "name": {
+                    "label": "Nombre",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "nickname": {
+                    "label": "Nombre de Usuario",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "cargo": {
+                    "autocomp": "roles.name",
+                    "label": "Cargo",
+                    "type": "rel",
+                    "grid": "20",
+                    "options": [
+                        "Administrador​",
+                        "Vendedor"
+                    ]
+                },
+                "email": {
+                    "label": "E-Mail",
+                    "type": "email",
+                    "grid": "20"
+                },
+                "password": {
+                    "label": "Clave",
+                    "type": "password",
+                    "silent": "1"
+                },
+                "password2": {
+                    "label": "Confirmar Clave",
+                    "type": "password",
+                    "silent": "1"
+                },
+                "phone": {
+                    "label": "Teléfono",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "address": {
+                    "label": "Dirección",
+                    "grid": "20",
+                    "type": "text"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea"
+                }
+            }
+        },
+        "roles": {
+            "import": "true",
+            "type": "grid",
+            "name": "Roles",
+            "singular": "Rol",
+            "icon": "users",
+            "fields": {
+                "name": {
+                    "label": "Nombre",
+                    "type": "text",
+                    "grid": "20"
+                },
+                "notes": {
+                    "label": "Notas",
+                    "type": "textarea",
+                    "grid": "40"
+                },
+                "permissions": {
+                    "label": "Permisos",
+                    "type": "permissions"
+                }
+            }
+        }
+    },
+    "style": {
+        "main_menu_font_size": "1em",
+        "home_menu_size": "1.2em",
+        "loader_padding": "5em  0.4em 0",
+        "loader_size": "18em",
+        "main_menu_pad": "0.1em",
+        "main_menu_vmargin": "0.2em",
+        "main_menu_top": "16.5em",
+        "viewport_color": "#F0F0F0",
+        "base_color": "#405974"
+    },
+    "settings": {
+        "system_name": "CRM",
+        "db_driver": "ne"
+    }
+}

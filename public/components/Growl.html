@@ -1,0 +1,163 @@
+<template id="snp-growl-template">
+
+    <style>
+        .snp-growl {
+            position: fixed;
+            top: 5px;
+            left: 229px;
+            width: max-content;
+            color: var(--snp-foreground-alpha9);
+            padding: 3px 6px;
+            border-radius: 9px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            height: 22px;
+            background-color: var(--snp-background-alpha7);
+        }
+
+        svg {
+            height: 10px;
+            width: 20px;
+            vertical-align: middle;
+            margin-right: 1em;
+        }
+
+        .flasher {
+            overflow: hidden;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #008000;
+            display: inline-block;
+            position: relative;
+        }
+
+        .flasher.flashing {
+            animation: flash 0.3s infinite;
+        }
+
+        .flasher.offline {
+            background-color: red !important;
+        }
+
+        .growl-message {
+            margin-left: 10px;
+        }
+
+        .shine {
+            overflow: hidden;
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background-color: rgb(122 189 122);
+            display: inline-block;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            box-shadow: 0 0 5px 1px #f5f5f5;
+        }
+
+        .offline .shine {
+            background-color: #d8afaf !important;
+            box-shadow: 0 0 3px 3px #f38282 !important;
+        }
+
+        @keyframes flash {
+            0% {
+                background-color: #50ce50;
+            }
+
+            100% {
+                background-color: #008000;
+            }
+        }
+
+        @media only screen and (max-width: 667px) {
+            .snp-growl {
+                left: 44px;
+            }
+        }
+    </style>
+
+    <div class="snp-growl">
+        <div class="flasher">
+            <div class="shine"></div>
+        </div>
+        <span class="growl-message"></span>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-growl-template");
+
+        class SnpGrowl extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.$container = this._shadowRoot.querySelector(".snp-growl");
+                this.$message = this._shadowRoot.querySelector(".growl-message");
+                this.$flasher = this._shadowRoot.querySelector(".flasher");
+            }
+
+            get message() {
+                return this.getAttribute("message");
+            }
+
+            set message(value) {
+                this.setAttribute("message", value);
+            }
+
+            static get observedAttributes() {
+                return ["message"];
+            }
+
+            attributeChangedCallback(name, oldVal, newVal) {
+                this.render();
+            }
+
+            remove() {
+                this.message = ''
+            }
+
+            render() {
+
+
+                if (this.message == 'Sin conexión') {
+                    this.$flasher.classList.add('offline')
+                } else {
+                    this.$flasher.classList.remove('offline')
+                }
+
+                if (this.message) {
+                    this.$flasher.classList.add('flashing')
+                } else {
+                    this.$flasher.classList.remove('flashing')
+                }
+
+                this.$message.style.display = 'none'
+
+                //clearTimeout(this.setMessageTimeout)
+                //this.setMessageTimeout = setTimeout(() => {
+                if (this.message) {
+                    this.$message.style.display = 'block'
+                }
+
+                this.$message.innerHTML = this.message
+                //}, 1000)
+
+            }
+        }
+
+        if (!window.customElements.get("snp-growl")) {
+            window.customElements.define("snp-growl", SnpGrowl);
+        }
+    })();
+
+</script>

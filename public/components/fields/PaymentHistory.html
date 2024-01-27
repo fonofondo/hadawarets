@@ -1,0 +1,189 @@
+<template id="snp-paymenthistory-input-template">
+
+    <style>
+    	.history-table{
+    		width: 100%;
+    	}
+        .history-table th {
+            border-left: 1px solid var(--snp-foreground-alpha3);
+        }
+
+        .history-table th:nth-child(1) {
+            border-left: none;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 8px 3px;
+        }
+        
+        .history-table tr:nth-child(odd) td {
+            background-color: var(--snp-foreground-alpha1);
+        }
+        
+        .history-table tr:hover td {
+            background-color: var(--snp-primary-alpha4);
+        }
+    </style>
+    <div style="width: 100%">
+        <table class="history-table">
+            <thead>
+                <th>Registro</th>
+                <th>Fecha</th>
+                <th>Suma</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-paymenthistory-input-template");
+
+        class SnpPaymentHistoryInput extends SnpInput {
+            constructor() {
+                super();
+                this.wrap.appendChild(template.content.cloneNode(true));
+                this.inputElement = null
+                this.historyTable = this.wrap.querySelector(".history-table")
+                this.historyTableBody = this.historyTable.querySelector("tbody")
+                // this.historyAddButton = this.wrap.querySelector("#paymenthistory-add")
+
+                // this.historyAddButton.addEventListener('click', ()=>{
+                //     snpLoadModalForm({
+                //         'snptype': 'pagos',
+                //         "rel_pedidos": '01'
+                //     }, () =>{
+                            
+                //     })
+                // })
+                this.addListeners()
+                
+            }
+
+            addListeners(){
+                document.addEventListener('paymentAdded', (event) => {
+                    if(this.paymentAddedTimeout) clearTimeout(this.paymentAddedTimeout)
+                    this.paymentAddedTimeout = setTimeout(()=>{
+                        this.addPayment(event.detail)
+                    },500)
+                })
+            }
+
+            addPayment(detail){
+                console.log('addPayment detail', detail)
+                const payment = {}
+                payment.suma = detail.amount
+                payment.moduleName = 'Pagos'
+                payment.date_created = Date.now()
+                payment.rel_contacts_name = detail.doc.rel_contacts_name
+                if(!this.historyDocs) this.historyDocs = []
+                this.historyDocs.push(payment)
+                this.render()
+            }
+
+            disconnectedCallback() {
+                // Your code when the component is destroyed or removed from the DOM
+                console.log("Component is being destroyed");
+            }
+
+            get value() {
+                this.fieldValue = this.historyDocs
+                return this.fieldValue
+            }
+
+            get textValue() {
+                return ''
+            }
+            
+            set doc(newDoc) {
+            	if(!('snpId'in newDoc)) return;
+	            this._doc = newDoc
+	            this.getHistoryDocs();
+                // const tableBody = this.historyTable.querySelector('tbody')
+	        }
+
+            async getHistoryDocs() {
+            	const historyModules = this.fieldInfo.history_modules
+            	
+            	this.historyDocs = []
+            	
+            	for(const historyModule of historyModules){
+            		const filters = {}
+            		filters[historyModule.field] = this._doc.snpId
+            		const data = await snpdb.find({
+	                    snptype: historyModule.module,
+	                    filterType: 'exact',
+	                    amount: 2000,
+	                    offset: 0,
+	                    filters,
+	                    live: false
+	                })
+	                
+	                if('docs' in data){
+	                	for(const doc of data.docs){
+	                		doc.moduleName = historyModule.name
+	                		this.historyDocs.push(doc)
+	                	}
+	                }
+            	}
+            	
+            	this.render();
+            }
+
+            async render() {
+                if(!this.fieldInfo) return
+
+            	this.historyTableBody.innerHTML = '';
+            	
+            	if(this.historyDocs){
+            		this.historyTable.style.display = 'table'
+
+            		this.historyDocs.sort(function(a, b) {
+					  return a.date_created - b.date_created;
+					});
+					
+					for(const doc of this.historyDocs){
+						
+						const tr = document.createElement('tr')
+						
+						tr.innerHTML = `
+							<td>${doc.moduleName}</td>
+							<td>${stampToDate(doc.date_created)}</td>
+                            <td align="right">${formatMoney(doc['suma'])}</td>
+						`; 
+						
+						tr.addEventListener('click', () => {
+							
+							snpLoadModalForm(doc, () =>{
+                                
+							})
+							/*
+							const form = document.createElement('snp-form')
+							form.moduleInfo = globalThis.scheme.modules[doc.snptype]
+			                
+			                globalThis.currentPane._shadowRoot.appendChild(form);
+			                
+			                form.loadDoc(doc)
+			                
+			                form.showForm()*/
+						})
+						
+						this.historyTableBody.appendChild(tr)
+					}
+	
+	                
+            	}else{
+                    this.historyTable.style.display = 'none'
+                }
+            }
+        }
+
+        if (!window.customElements.get("snp-input-paymenthistory")) {
+            window.customElements.define("snp-input-paymenthistory", SnpPaymentHistoryInput);
+        }
+    })();
+
+</script>

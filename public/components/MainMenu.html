@@ -1,0 +1,152 @@
+<template id="snp-main-menu-template">
+    <style>
+        #main-menu {
+            height: calc(100% - 240px);
+            text-align: right;
+            overflow-x: hidden;
+            position: relative;
+            left: 2px;
+        }
+
+        #main-menu ul {
+            display: inline-flex;
+            flex-direction: column;
+            width: 176px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #main-menu li {
+            display: block;
+            margin: 0;
+            padding: 0;
+            text-align: left;
+        }
+
+        #main-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.2em 0.5em;
+            margin: 0.2em 0;
+            border: 2px solid transparent;
+            border-right: none;
+            text-decoration: none;
+            z-index: 1000;
+            color: var(--snp-primary-shade-color);
+            background-color: transparent;
+            border-radius: var(--snp-normal-radius) 0 0 var(--snp-normal-radius);
+        }
+
+        #main-menu a.active {
+            background-color: var(--snp-background-color);
+            opacity: 1;
+        }
+
+        #main-menu a snp-icon {
+            width: 1em;
+            margin-right: 0.5em;
+            text-align: right;
+            opacity: 0.8;
+        }
+
+        #main-menu a:hover snp-icon {
+            opacity: 1;
+        }
+
+        #main-menu-toggle {
+            height: 30px;
+        }
+
+        @media only screen and (max-width: 667px) {
+            #main-menu {
+                left: 0;
+                background-color: var(--snp-background-alpha6);
+                text-align: center;
+            }
+
+            #main-menu a {
+                border-radius: 8px;
+                font-size: 1.2em;
+                padding: 0.7em;
+                margin: 0;
+                border-bottom: 1px solid var(--snp-foreground-alpha1);
+            }
+
+        }
+    </style>
+
+    <div id="main-menu">
+        <ul id="main-menu-ul"></ul>
+    </div>
+</template>
+
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-main-menu-template");
+
+        class MainMenu extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                document.addEventListener("snpInit", (e) => {
+                    this.init(e.detail);
+                });
+
+                window.addEventListener('hashchange', () => {
+                    this.onHashChange(location.hash)
+                }, false);
+            }
+
+            getHashParts(hash) {
+                hash = hash.replace(/^#/, '')
+                var hashParts = hash.split('/')
+                return {
+                    module: hashParts[0],
+                    action: hashParts[1],
+                    entry: hashParts[2],
+                }
+            }
+
+            onHashChange(hash) {
+
+                var hashParts = this.getHashParts(hash)
+                this._shadowRoot.querySelectorAll('.active').forEach((element) => {
+                    element.classList.remove('active')
+                })
+
+                var moduleItem = this._shadowRoot.querySelector('[href="#' + hashParts.module + '"]')
+                if (moduleItem)
+                    moduleItem.classList.add('active')
+            }
+
+            init(scheme) {
+                this.menuEle = this._shadowRoot.getElementById("main-menu-ul");
+
+
+                Object.keys(scheme.modules).forEach((moduleKey) => {
+                    var module = scheme.modules[moduleKey];
+                    if (module.name && hasPermission('view', moduleKey)) {
+                        const moduleLi = document.createElement("li");
+                        moduleLi.innerHTML = `<a href="#${moduleKey}">
+                                      <snp-icon icon-name="${module.icon}"></snp-icon>
+                                      ${module.name}
+                                  </a>`;
+                        this.menuEle.append(moduleLi);
+                    }
+                });
+                this.onHashChange(location.hash);
+            }
+        }
+
+        ////////
+
+        if (!window.customElements.get("snp-main-menu")) {
+            window.customElements.define("snp-main-menu", MainMenu);
+        }
+    })();
+</script>

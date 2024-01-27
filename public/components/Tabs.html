@@ -1,0 +1,116 @@
+<template id="snp-tabs-template">
+    <style>
+        .tabs {
+            padding: 0.5em 0.5em 0;
+            background: var(--snp-foreground-alpha1);
+            background: linear-gradient(0deg, var(--snp-foreground-alpha1) 0%, var(--snp-foreground-alpha0) 100%);
+            display: flex;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--snp-primary-alpha5);
+            height: 60px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tabs> ::slotted(*) {
+            border-bottom: none;
+            display: inline-block;
+            padding: 0.3em 0.7em;
+            border-radius: 0.3em;
+            margin-right: 0.3em;
+            user-select: none;
+            background-color: var(--snp-background-color);
+            font-size: 1.1em;
+            margin-bottom: 0.3em;
+            cursor: pointer;
+            color: var(--snp-foreground-alpha7);
+            transition: font-size 0.1s;
+        }
+
+        .tabs> ::slotted(.active) {
+            border-bottom: none;
+            color: var(--snp-primary-color);
+            font-size: 1.2em;
+            margin-bottom: 0;
+            border: 1px solid var(--snp-primary-color);
+            border-bottom: none;
+            border-top: 2px solid var(--snp-primary-color);
+            position: relative;
+            top: 2px;
+            border-radius: 0.3em 0.3em 0 0;
+            padding-bottom: 0.5em;
+        }
+
+        .tab-contents> ::slotted(*) {
+            display: none;
+        }
+
+        .tab-contents> ::slotted(*:nth-child(1)) {
+            display: block;
+        }
+
+        @media only screen and (max-width: 667px) {}
+    </style>
+
+    <div class="snp-tabs">
+        <div class="tabs">
+            <slot name="tabs">
+
+            </slot>
+        </div>
+        <div class="tab-contents">
+            <slot name="content">
+
+            </slot>
+        </div>
+    </div>
+</template>
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-tabs-template");
+
+        class SnpTabs extends HTMLElement {
+            constructor() {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.tabCount = this._shadowRoot.querySelector("slot[name='tabs']").assignedNodes().length
+
+                this._shadowRoot.querySelector("slot[name='tabs']")
+                    .assignedNodes()
+                    .forEach(tabElement => {
+                        $(tabElement).click(() => {
+                            this.resetTabs()
+                            this._shadowRoot.querySelector("slot[name='content']")
+                                .assignedNodes()[$(tabElement).index()].style.display = 'block'
+                            $(tabElement).addClass('active')
+                        })
+                    });
+
+                $(this._shadowRoot.querySelector("slot[name='tabs']")
+                    .assignedNodes()[0]).click()
+            }
+
+            resetTabs() {
+                this._shadowRoot.querySelector("slot[name='tabs']")
+                    .assignedNodes()
+                    .forEach(tabElement => {
+                        $(tabElement).removeClass('active')
+                    });
+
+                this._shadowRoot.querySelector("slot[name='content']")
+                    .assignedNodes()
+                    .forEach(contentElement => {
+                        contentElement.style.display = 'none'
+                    });
+            }
+        }
+
+        if (!window.customElements.get("snp-tabs")) {
+            window.customElements.define("snp-tabs", SnpTabs);
+        }
+    })();
+
+</script>

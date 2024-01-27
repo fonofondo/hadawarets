@@ -1,0 +1,137 @@
+<template id="snp-autocomp-template">
+    <style>
+        .result-container {
+            box-sizing: border-box;
+            background-color: var(--snp-background-color);
+            border: 1px solid var(--snp-primary-alpha3);
+            position: fixed;
+            display: none;
+            box-shadow: 5px 10px 20px var(--snp-foreground-alpha8);
+        }
+    </style>
+    <div class="result-container"></div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-autocomp-template");
+
+        class SnpAutocomp extends HTMLElement {
+            constructor() {
+                super();
+                this.scheme = null
+                this.panes = {}
+                this.minLetters = 1
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+                this.resultContainer = this._shadowRoot.querySelector('.result-container')
+            }
+
+            init(field) {
+                this.field = field
+                this.fieldInfo = field.fieldInfo
+
+                if (!this.eventsAdded) {
+                    this.field.inputElement.addEventListener("keyup", (e) => {
+                        this.doAutocomp()
+                    })
+
+                    this.field.inputElement.addEventListener("click", (e) => {
+                        this.doAutocomp()
+                    })
+
+                    this.field.inputElement.addEventListener("blur", (e) => {
+                        setTimeout(() => { this.hide() }, 200)
+                    })
+
+                    document.addEventListener("click", (e) => {
+                        this.hide()
+                    });
+
+                    document.addEventListener("autocompShown", (e) => {
+
+                    });
+
+                    this.eventsAdded = true
+                }
+            }
+
+            doAutocomp() {
+                clearTimeout(this.autocompTimeout)
+                const val = this.field.inputElement.value
+                this.autocompTimeout = setTimeout(() => {
+                    this.autocomp(val)
+                }, 200)
+
+                // if (val.length >= this.minLetters) {
+                //     this.autocompTimeout = setTimeout(() => {
+                //         this.autocomp(val)
+                //     }, 200)
+                // } else {
+                //     this.hide()
+                // }
+            }
+
+            async autocomp(val) {
+
+                const autocompModule = this.fieldInfo.autocomp.split('.')[0]
+                const autocompField = this.fieldInfo.autocomp.split('.')[1]
+
+                const filters = {}
+                filters[autocompField] = val.length == 1 ? `^${val}` : val
+
+                const options = {
+                    snptype: autocompModule,
+                    filters: filters
+                }
+
+                this.resultContainer.innerHTML = 'Buscando...'
+
+                const fieldBox = this.field.wrap.getBoundingClientRect()
+                this.resultContainer.style.top = `${fieldBox.top + fieldBox.height}px`
+                this.resultContainer.style.left = `${fieldBox.left}px`
+                this.resultContainer.style.width = `${fieldBox.width}px`
+
+                this.show()
+
+                const data = await snpdb.find(options)
+
+                const docs = data.docs
+                if (!docs || !docs.length) {
+                    this.resultContainer.innerHTML = 'Sin resultados.';
+                    return
+                }
+
+                this.resultContainer.innerHTML = '';
+
+                const uniqueResults = {}
+
+                docs.forEach((doc) => {
+                    const val = doc[autocompField]
+                    uniqueResults[val] = doc
+                })
+
+                Object.keys(uniqueResults).forEach((resultKey) => {
+                    const doc = uniqueResults[resultKey]
+                    const entry = document.createElement('snp-autocomp-entry')
+                    entry.init(doc, this.field, this.fieldInfo, val)
+                    this.resultContainer.appendChild(entry)
+                })
+            }
+
+            show() {
+                this.resultContainer.style.display = 'block'
+            }
+
+            hide() {
+                this.resultContainer.style.display = 'none'
+            }
+        }
+
+        if (!window.customElements.get("snp-autocomp")) {
+            window.customElements.define("snp-autocomp", SnpAutocomp);
+        }
+    })();
+
+</script>

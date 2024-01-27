@@ -1,0 +1,68 @@
+<template id="snp-select-input-template">
+
+    <style>
+        select {
+            border: none;
+            background-color: white;
+            background-color: transparent;
+            box-sizing: border-box;
+            width: 100%;
+            padding: 4px;
+        }
+    </style>
+
+    <select class="input"></select>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-select-input-template");
+
+        class SnpSelectInput extends SnpInput {
+            constructor() {
+                super();
+                this.wrap.appendChild(template.content.cloneNode(true));
+                this.inputElement = this.wrap.querySelector(".input")
+            }
+
+            get value() {
+                this.fieldValue = this.inputElement.value
+                return this.fieldValue
+            }
+
+            set doc(newDoc) {
+                this._doc = newDoc
+                this.inputElement.value = newDoc[this.fieldInfo.fieldKey]
+            }
+
+            get textValue() {
+                return this.inputElement.value || this._doc[this.fieldInfo.fieldKey]
+            }
+
+            render() {
+                if (!this.fieldInfo.options) return
+                if ('forEach' in this.fieldInfo.options) {
+                    this.fieldInfo.options.forEach(optionText => {
+                        const optionElement = document.createElement('option')
+                        optionElement.innerHTML = optionText
+                        this.wrap.querySelector('select.input').appendChild(optionElement)
+                    });
+                } else {
+                    Object.keys(this.fieldInfo.options).forEach(optionKey => {
+                        const optionText = this.fieldInfo.options[optionKey]
+                        const optionElement = document.createElement('option')
+                        optionElement.innerHTML = optionText
+                        this.wrap.querySelector('select.input').appendChild(optionElement)
+                    });
+                }
+
+            }
+        }
+
+        if (!window.customElements.get("snp-input-select")) {
+            window.customElements.define("snp-input-select", SnpSelectInput);
+        }
+    })();
+
+</script>

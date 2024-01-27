@@ -1,0 +1,219 @@
+
+<!doctype html>
+<html style="
+--snp-primary-color: #0d6887;
+--snp-primary-alpha05: #1c5b820d;
+--snp-primary-alpha0: #1c5b8200;
+--snp-primary-alpha1: #1c5b821a;
+--snp-primary-alpha2: #1c5b8233;
+--snp-primary-alpha3: #1c5b824d;
+--snp-primary-alpha4: #1c5b8266;
+--snp-primary-alpha5: #1c5b8280;
+--snp-primary-alpha6: #1c5b8299;
+--snp-primary-alpha7: #1c5b82b3;
+--snp-primary-alpha8: #1c5b82cc;
+--snp-primary-alpha9: #1c5b82e6;
+--snp-foreground-color: #000000;
+--snp-foreground-alpha05: #0000000d;
+--snp-foreground-alpha0: #00000000;
+--snp-foreground-alpha1: #0000001a;
+--snp-foreground-alpha2: #00000033;
+--snp-foreground-alpha3: #0000004d;
+--snp-foreground-alpha4: #00000066;
+--snp-foreground-alpha5: #00000080;
+--snp-foreground-alpha6: #00000099;
+--snp-foreground-alpha7: #000000b3;
+--snp-foreground-alpha8: #000000cc;
+--snp-foreground-alpha9: #000000e6;
+--snp-background-color: #ffffff;
+--snp-background-alpha05: #ffffff0d;
+--snp-background-alpha0: #ffffff00;
+--snp-background-alpha1: #ffffff1a;
+--snp-background-alpha2: #ffffff33;
+--snp-background-alpha3: #ffffff4d;
+--snp-background-alpha4: #ffffff66;
+--snp-background-alpha5: #ffffff80;
+--snp-background-alpha6: #ffffff99;
+--snp-background-alpha7: #ffffffb3;
+--snp-background-alpha8: #ffffffcc;
+--snp-background-alpha9: #ffffffe6;
+--snp-primary-shade-color: #1c5b82;
+--snp-primary-shade-alpha05: #1c5b820d;
+--snp-primary-shade-alpha0: #1c5b8200;
+--snp-primary-shade-alpha1: #1c5b821a;
+--snp-primary-shade-alpha2: #1c5b8233;
+--snp-primary-shade-alpha3: #1c5b824d;
+--snp-primary-shade-alpha4: #1c5b8266;
+--snp-primary-shade-alpha5: #1c5b8280;
+--snp-primary-shade-alpha6: #1c5b8299;
+--snp-primary-shade-alpha7: #1c5b82b3;
+--snp-primary-shade-alpha8: #1c5b82cc;
+--snp-primary-shade-alpha9: #1c5b82e6;
+--snp-normal-radius: 7px;
+--snp-grid-gap: 3px;
+--snp-shadow-color: #00000080;
+">
+
+<head>
+  <script>
+    // if (location.protocol !== 'https:') {
+    //   location.replace(`https:${location.href.substring(location.protocol.length)}`);
+    // }
+  </script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-3369988-9"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'UA-3369988-9');
+  </script>
+
+  <meta charset='utf-8'>
+  <title>SinapTICs</title>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+  <meta name='description' content='Information management made easy.'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel='manifest' href='manifest.json'>
+  <meta name='mobile-web-app-capable' content='yes'>
+  <meta name='apple-mobile-web-app-capable' content='yes'>
+  <meta name='application-name' content='SinapTICs'>
+  <meta name='apple-mobile-web-app-status-bar-style' content='black'>
+  <meta name='apple-mobile-web-app-title' content='SinapTICs'>
+  <link rel='icon' sizes='192x192' href='/images/touch/android-launchericon-192-192.png'>
+  <link rel='apple-touch-icon' href='/images/touch/android-launchericon-192-192.png'>
+  <meta name='msapplication-TileImage' content='/images/touch/android-launchericon-144-144.png'>
+  <meta name='msapplication-TileColor' content='#2196F3'>
+  <meta name='theme-color' content='#2196F3'>
+  <meta property='og:title' content='SinapTICs'>
+  <meta property='og:type' content='website'>
+  <meta property='og:image' content='http://v2.sinaptics.com/assets/img/logo.png'>
+  <meta property='og:url' content='https://sinaptics.com/'>
+  <meta property='og:description' content='Information management made easy.'>
+
+
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/vendor/fontawesome/css/all.min.css" />
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div id="login">
+    <img src="/assets/img/logo.png" style="max-width: 300px; max-height: 200px; margin-bottom: 2em;" />
+    <div id="login-container">
+      <div class="msg"></div>
+      <label>
+        <span>Usuario:</span> <input id="user" />
+      </label>
+      <label>
+        <span>Clave:</span> <input type="password" id="password" />
+      </label>
+      <div id="login-button-container">
+        <button>
+          INGRESAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <template id="snp-landing-loader-template">
+    <style>
+      #landing-loader {
+        border: 2px solid var(--snp-primary-color);
+        top: 50%;
+        left: 50%;
+        margin-top: -50px;
+        margin-left: -50px;
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        position: fixed;
+        background-color: var(--snp-background-color);
+        width: 100px;
+        max-width: 100%;
+        height: 4px;
+        padding: 2px;
+        z-index: 1000000;
+      }
+
+      #load-bar {
+        background-color: var(--snp-primary-color);
+        height: 4px;
+        width: 0%;
+      }
+    </style>
+
+    <div id="landing-loader">
+      <div id="load-bar"></div>
+    </div>
+  </template>
+
+
+  <script>
+    (() => {
+
+      const template = document.getElementById("snp-landing-loader-template");
+
+      class LandingLoader extends HTMLElement {
+        constructor() {
+          super();
+
+          this._shadowRoot = this.attachShadow({ mode: "open" });
+          this._shadowRoot.appendChild(template.content.cloneNode(true));
+        }
+
+        init(steps) {
+          this.steps = steps
+          this.curStep = 0
+        }
+
+        stepUp() {
+          this.curStep++
+          this._shadowRoot.querySelector('#load-bar').style.width = `${(100 / this.steps) * this.curStep}%`
+        }
+      }
+
+      ////////
+
+      if (!window.customElements.get("snp-landing-loader")) {
+        window.customElements.define("snp-landing-loader", LandingLoader);
+      }
+    })();
+  </script>
+
+
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/sunburst.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+
+  <script src="js/vendor/jquery-3.5.1.min.js"></script>
+  <script src="js/vendor/socket.io.js"></script>
+  <script src="js/vendor/localforage.min.js"></script>
+  <script src="js/vendor/jquery.mobile-events.min.js"></script>
+  <script src="js/vendor/autonumeric.js"></script>
+  <script src="js/lib/utils.js"></script>
+  <script src="js/lib/db-driver/forage.js"></script>
+  <script src="js/lib/db.js"></script>
+  <script src="js/main.js"></script>
+
+  <script>
+
+
+    // (function (i, s, o, g, r, a, m) {
+    //   i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+    //     (i[r].q = i[r].q || []).push(arguments)
+    //   }, i[r].l = 1 * new Date(); a = s.createElement(o),
+    //     m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    // })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+    // ga('create', 'UA-59325548-2', 'auto');
+    // ga('send', 'pageview');
+  </script>
+</body>
+
+</html>

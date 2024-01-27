@@ -1,0 +1,511 @@
+<template id="snp-form-template">
+
+    <style>
+        .form-wrap {
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-color: var(--snp-background-alpha6);
+            font-size: 1.1em;
+            z-index: 10000;
+            border-radius: var(--snp-normal-radius);
+        }
+
+        .form-container {
+            position: fixed;
+            /* border: 2px solid var(--snp-primary-color); */
+            border-radius: var(--snp-normal-radius);
+            max-height: 98%;
+            min-width: 300px;
+            max-width: 90vw;
+            background-color: var(--snp-background-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0.5em 0.5em 4em 4px var(--snp-shadow-color);
+            margin-left: -200px;
+            z-index: 100000;
+        }
+
+        .form-header {
+            display: flex;
+            align-items: center;
+            width: calc(100% - 6px);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--snp-primary-color);
+        }
+
+        .form-title {
+            flex-grow: 1;
+            font-size: 1.2em;
+            padding: 0.8em 0.8em 0.5em;
+            color: var(--snp-primary-shade-color);
+        }
+
+        .form-title snp-icon {
+            margin-right: 0.5em
+        }
+
+        .form-closer {
+            padding: 0.3em;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        .form-body {
+            flex-grow: 1;
+            max-height: calc(100vh - 111px);
+            overflow: hidden;
+            display: table;
+            padding: 1em;
+            width: 100%;
+            box-sizing: border-box;
+            border-collapse: collapse;
+        }
+
+        .form-footer {
+            min-height: 3em;
+            width: calc(100% - 6px);
+            margin: 0 auto;
+            border-top: 2px solid var(--snp-primary-color);
+            display: flex;
+            padding: 0.5em;
+            box-sizing: border-box;
+        }
+
+        .form-footer-buttons {
+            text-align: right;
+            flex-grow: 1;
+        }
+
+        .form-body-scroll {
+            overflow: auto;
+            padding: 1em;
+        }
+
+        .field-group-fields {
+            display: table-row-group;
+            border-left: 2px solid transparent;
+        }
+
+        .field-group-label-row {
+            display: table-row;
+            height: 40px;
+        }
+
+        .field-group-label-spacer {
+            display: table-cell;
+            height: 20px;
+            border-left: 2px solid transparent;
+        }
+
+        .field-group-label {
+            display: table-cell;
+            vertical-align: bottom;
+            position: relative;
+            left: -1px;
+            cursor: pointer;
+        }
+
+        .field-group-label-text {
+            padding: 0.3em;
+            border-radius: 0.3em 0.3em 0 0;
+            font-size: 1.1em;
+            position: relative;
+            top: 2px;
+        }
+
+        .field-group-label-text snp-icon {
+            position: relative;
+            top: 1px;
+        }
+
+
+        .field-group-label-sibling {
+            display: table-cell;
+            position: relative;
+            left: -1px;
+        }
+
+        @media only screen and (max-width: 667px) {
+            .form-body {
+                overflow: auto;
+                font-size: 1.2em;
+            }
+
+            .form-container {
+                top: 0;
+                left: 0;
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+                position: absolute;
+            }
+        }
+    </style>
+
+    <div class="form-wrap">
+        <div class="form-container">
+            <div class="form-header">
+                <div class="form-title">
+                </div>
+                <div class="form-closer">
+                    <snp-icon icon-name="times"></snp-icon>
+                </div>
+            </div>
+            <div class="form-body-scroll">
+                <div class="form-body"></div>
+            </div>
+
+            <div class="form-footer">
+                <div class="form-revisions">
+
+                </div>
+                <div class="form-footer-buttons">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    (() => {
+
+        const template = document.getElementById("snp-form-template");
+
+        class SnpForm extends HTMLElement {
+            moduleInfo
+
+            constructor(docId) {
+                super();
+
+                this._shadowRoot = this.attachShadow({ mode: "open" });
+                this._shadowRoot.appendChild(template.content.cloneNode(true));
+
+                this.formWrap = this._shadowRoot.querySelector(".form-wrap");
+                this.formBody = this._shadowRoot.querySelector(".form-body");
+                this.formWrap.style.display = 'none'
+
+                this.rendered = false
+
+                this.fieldInputs = {}
+
+                this.docId = docId
+                this.doc = {}
+            }
+
+            reset() {
+                Object.keys(this.fieldInputs).forEach((fieldKey) => {
+                    this.fieldInputs[fieldKey].reset()
+                })
+                this.formTitleText.innerHTML = 'Agregar ' + this.moduleInfo.singular
+                this.docId = null
+                this.snpId = null
+                this.doc = null
+                if (this.revs) {
+                    this.revs.remove()
+                    this.revs = null
+                }
+                return this
+            }
+
+            async saveForm() {
+                const data = {}
+
+                let shouldAbort = false
+
+                for(const fieldKey of Object.keys(this.fieldInputs)){
+                    const field = this.fieldInputs[fieldKey]
+                    data[fieldKey] = field.value
+
+                    if(!field.validate()){
+                        alert('Campo requerido: ' + field.fieldInfo.label)
+                        return
+                    }
+                }
+
+                data.snptype = this.moduleInfo.moduleKey
+                data.id = this.docId ? this.docId : null
+                data.snpId = this.snpId ? this.snpId : null
+
+                console.log('going to save', data)
+                const res = await snpdb.save(data)
+
+                this.loadDoc(res)
+
+                if (this.onSave) {
+                    this.onSave(data)
+                }
+
+                // var i = 0
+                // setInterval(() => {
+                //     Object.keys(data).forEach((fieldKey) => {
+                //         data[fieldKey] = Math.random().toString(36).slice(2, 12)
+                //     })
+                //     data.snptype = this.moduleInfo.moduleKey
+                //     data.id = null
+                //     data.snpId = null
+                //     snpdb.save(data)
+                //     i++
+                // }, 200);
+            }
+
+            addEvents() {
+
+                this.saveButton = this._shadowRoot.querySelector(".save-button");
+                
+                if (this.saveButton) {
+                    this.saveButton.addEventListener('click', () => {
+                        this.saveForm()
+                    })
+                }
+
+                this.eventsAdded = true
+            }
+
+            connectedCallback() {
+                if (this.moduleInfo && !this.rendered) {
+                    this.render(this.moduleInfo)
+                }
+
+                if (this.rendered && !this.eventsAdded) {
+                    this.addEvents()
+                }
+            }
+
+            showForm() {
+                if (!this.rendered) {
+                    return
+                }
+
+                this.formWrap.style.display = 'flex';
+            }
+
+            async loadDoc(doc) {
+                this.formTitleText.innerHTML = 'Cargando... '
+                this.doc = doc
+
+                const loadData = () => {
+                    Object.keys(this.fieldInputs).forEach((fieldKey) => {
+                        this.fieldInputs[fieldKey].doc = this.doc
+                    })
+                }
+
+                if (doc.snpId) {
+                    const revisions = await snpdb.getRevisions(doc)
+                    loadData()
+                    this.formTitleText.innerHTML = 'Editar ' + this.moduleInfo.singular
+                    this.docId = doc.id
+                    this.snpId = doc.snpId
+                    this.setRevisions(revisions)
+                    console.log('Form doc', doc)
+                    return doc
+                } else {
+                    loadData()
+                    this.formTitleText.innerHTML = 'Agregar ' + this.moduleInfo.singular
+                    return doc
+                }
+            }
+
+            setRevisions(revisions) {
+                if (revisions.length > 1) {
+                    if (!this.revs) {
+                        this.revs = document.createElement('snp-form-revisions')
+                        const revsContainer = this._shadowRoot.querySelector('.form-revisions')
+                        revsContainer.appendChild(this.revs)
+                    }
+
+                    this.revs.reset()
+                    this.revs.init(revisions, this)
+                }
+            }
+
+            render(moduleInfo) {
+                const formTitleIcon = document.createElement('snp-icon')
+                this._shadowRoot.querySelector('.form-title').append(formTitleIcon)
+
+                this.formTitleText = document.createElement('span')
+                this._shadowRoot.querySelector('.form-title').append(this.formTitleText)
+
+                const formCloser = this._shadowRoot.querySelector('.form-closer')
+                formCloser.addEventListener('click', () => {
+                    this.formWrap.style.display = 'none'
+                    if (this.onClose) {
+                        this.onClose()
+                    }
+                })
+
+                formTitleIcon.iconName = moduleInfo.icon
+                this.formTitleText.innerHTML = 'Agregar ' + moduleInfo.singular
+
+                const fieldgroups = this.getFieldGroups(moduleInfo)
+
+                Object.keys(fieldgroups).forEach((fieldGroupKey) => {
+                    if (fieldgroups[fieldGroupKey].label) {
+                        this.makeFieldgroupHeader(fieldGroupKey, fieldgroups[fieldGroupKey])
+                    }
+
+                    const fieldGroupFields = document.createElement('div')
+                    fieldGroupFields.classList.add('field-group-fields')
+                    fieldGroupFields.style.borderColor = fieldgroups[fieldGroupKey].color
+                    fieldGroupFields.setAttribute('id', 'fieldgroup-' + fieldGroupKey)
+
+                    if (fieldgroups[fieldGroupKey].label && !fieldgroups[fieldGroupKey].startopen) {
+                        fieldGroupFields.style.display = 'none'
+                    }
+
+                    this.formBody.appendChild(fieldGroupFields)
+
+                    if (fieldgroups[fieldGroupKey].fields) {
+                        fieldgroups[fieldGroupKey].fields.forEach((fieldInfo) => {
+                            if (!fieldInfo.label) return;
+                            const field = document.createElement('snp-field-input')
+                            field.init(fieldInfo)
+                            field.doc = this.doc
+                            field.render()
+                            this.fieldInputs[fieldInfo.fieldKey] = field
+                            fieldGroupFields.appendChild(field)
+
+                            // fieldInfo.moduleKey = this.moduleInfo.moduleKey
+                            // field.fieldInfo = fieldInfo
+                            // this.fieldInputs[fieldInfo.fieldKey] = field
+                            // if (fieldInfo.fieldKey) field.initFieldInput({ snptype: this.moduleInfo.moduleKey }, fieldInfo.fieldKey)
+
+
+                        })
+                    }
+                })
+
+                // if (hasPermission('endorse', this.moduleInfo.moduleKey)) {
+                //     $(this._shadowRoot.querySelector('.form-footer-buttons'))
+                //         .append('<snp-button class="endorse-button"><snp-icon icon-name="lock-open"></snp-icon> Endosar</snp-button>')
+                // }
+
+                if (hasPermission('edit', this.moduleInfo.moduleKey)) {
+                    $(this._shadowRoot.querySelector('.form-footer-buttons'))
+                        .append('<snp-button class="save-button"><snp-icon icon-name="save"></snp-icon> Guardar</snp-button>')
+                } else {
+                    Object.keys(this.fieldInputs).forEach((fieldKey) => {
+                        this.fieldInputs[fieldKey].readonly = true
+                    })
+                }
+
+
+
+                this.rendered = true
+            }
+
+            makeFieldgroupHeader(fieldGroupKey, fieldGroupInfo) {
+                const fieldGroupLabelRow = document.createElement('div')
+                fieldGroupLabelRow.classList.add('field-group-label-row')
+
+                const fieldGroupLabelSpacer = document.createElement('div')
+                fieldGroupLabelSpacer.classList.add('field-group-label-spacer')
+                fieldGroupLabelSpacer.style.borderColor = fieldGroupInfo.color
+
+                const fieldGroupLabel = document.createElement('div')
+                fieldGroupLabel.classList.add('field-group-label')
+                fieldGroupLabel.style.borderBottom = '2px solid ' + fieldGroupInfo.color
+                fieldGroupLabelRow.appendChild(fieldGroupLabel)
+
+                const fieldGroupLabelText = document.createElement('div')
+                fieldGroupLabelText.classList.add('field-group-label-text')
+                fieldGroupLabelText.style.backgroundColor = fieldGroupInfo.color
+                fieldGroupLabel.appendChild(fieldGroupLabelText)
+
+                const fieldGroupLabelSibling = document.createElement('div')
+                fieldGroupLabelSibling.classList.add('field-group-label-sibling')
+                fieldGroupLabelSibling.style.borderBottom = '2px solid ' + fieldGroupInfo.color
+                fieldGroupLabelRow.appendChild(fieldGroupLabelSibling)
+
+                this.formBody.appendChild(fieldGroupLabelRow)
+                this.formBody.appendChild(fieldGroupLabelSpacer)
+
+                if (fieldGroupInfo.startopen) {
+                    fieldGroupLabelText.innerHTML = '<snp-icon icon-name="chevron-down"></snp-icon>'
+                        + fieldGroupInfo.label
+                } else {
+                    fieldGroupLabelSpacer.style.visibility = 'hidden'
+                    fieldGroupLabelText.innerHTML = '<snp-icon icon-name="chevron-right"></snp-icon>'
+                        + fieldGroupInfo.label
+                }
+
+                fieldGroupLabel.addEventListener('click', () => {
+                    const groupFields = this._shadowRoot.getElementById('fieldgroup-' + fieldGroupKey)
+                    if (groupFields.style.display == 'none') {
+                        groupFields.style.display = 'table-row-group'
+                        fieldGroupLabelSpacer.style.visibility = 'visible'
+                        fieldGroupLabelText.innerHTML = '<snp-icon icon-name="chevron-down"></snp-icon>'
+                            + fieldGroupInfo.label
+                    } else {
+                        groupFields.style.display = 'none'
+                        fieldGroupLabelSpacer.style.visibility = 'hidden'
+                        fieldGroupLabelText.innerHTML = '<snp-icon icon-name="chevron-right"></snp-icon>'
+                            + fieldGroupInfo.label
+                    }
+                })
+            }
+
+            getFieldGroups(moduleInfo) {
+                const nongroupfields = moduleInfo.fields
+
+                const groupfields = []
+                groupfields[0] = {}
+                groupfields[0]['fields'] = []
+
+                Object.keys(nongroupfields).forEach((fieldKey, fieldIndex) => {
+
+                    const fieldInfo = moduleInfo.fields[fieldKey]
+                    fieldInfo.fieldKey = fieldKey
+                    fieldInfo.moduleKey = moduleInfo.moduleKey
+
+                    if (!moduleInfo.fieldgroups) return;
+
+                    Object.keys(moduleInfo.fieldgroups).forEach((fieldgroupKey, fieldgroupIndex) => {
+
+                        fieldgroupIndex++
+
+                        const fieldgroupData = moduleInfo.fieldgroups[fieldgroupKey]
+
+                        const span = fieldgroupData.span.split('-')
+
+                        if (fieldIndex >= span[0] && fieldIndex <= span[1]) {
+
+                            if (!groupfields[fieldgroupIndex]) {
+
+                                groupfields[fieldgroupIndex] = moduleInfo.fieldgroups[fieldgroupKey]
+                                groupfields[fieldgroupIndex]['fields'] = []
+                            }
+
+                            fieldInfo.fieldgroupKey = fieldgroupKey
+
+                            groupfields[fieldgroupIndex]['fields'].push(fieldInfo);
+                            delete nongroupfields[fieldKey]
+                        }
+
+
+                    })
+                })
+
+                Object.keys(nongroupfields).forEach((fieldKey) => {
+                    groupfields[0]['fields'].push(nongroupfields[fieldKey])
+                })
+
+                return groupfields
+            }
+        }
+
+        if (!window.customElements.get("snp-form")) {
+            window.customElements.define("snp-form", SnpForm);
+        }
+    })();
+
+</script>

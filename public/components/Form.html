@@ -200,6 +200,7 @@
 
                 this.docId = docId
                 this.doc = {}
+                window.formDoc = this.doc
             }
 
             reset() {
@@ -293,6 +294,8 @@
                 this.formTitleText.innerHTML = 'Cargando... '
                 this.doc = doc
 
+                // Loading the data into the fields
+                // means passing the whole doc to each field
                 const loadData = () => {
                     Object.keys(this.fieldInputs).forEach((fieldKey) => {
                         this.fieldInputs[fieldKey].doc = this.doc
@@ -306,7 +309,6 @@
                     this.docId = doc.id
                     this.snpId = doc.snpId
                     this.setRevisions(revisions)
-                    console.log('Form doc', doc)
                     return doc
                 } else {
                     loadData()

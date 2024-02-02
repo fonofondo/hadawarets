@@ -216,14 +216,14 @@
                 }
 
                 this.inputElement.value = ''
-                
+
                 this.total = total
 
                 this.setUpPayments()
             }
 
-            setUpPayments(){
-                if(this.paymentsIsSetup) return
+            setUpPayments() {
+                if (this.paymentsIsSetup) return
                 this.paymentsIsSetup = true
 
                 const paymentBtnContainer = document.createElement('div')
@@ -235,16 +235,16 @@
                 this.wrap.parentElement.appendChild(paymentBtnContainer)
 
                 let paidAmount = 0
-                if(this._doc && this._doc.pagos_history){
-                    for(var pago of this._doc.pagos_history){
+                if (this._doc && this._doc.pagos_history) {
+                    for (var pago of this._doc.pagos_history) {
                         paidAmount += pago.suma
                     }
                 }
-                
 
-                setTimeout(()=>{
+
+                setTimeout(() => {
                     const paymentBtn = paymentBtnContainer.querySelector('#paymenthistory-add')
-                    
+
                     paymentBtn.addEventListener('click', () => {
                         var paymentTemplate = document.createElement("div");
 
@@ -316,19 +316,41 @@
                         const saldoInput = paymentTemplate.querySelector('#saldo-input')
                         const saveBtn = paymentTemplate.querySelector('#payment-save-btn')
 
-                        paymentInput.addEventListener('keyup', () => {
-                            if(!paymentInput.value) return
-                            const plainNumber = parseInt(paymentInput.value.replace('$', '').replace('.', ''))
-                            paymentInput.value = formatMoney(plainNumber)
+                        const autonumeric_options = {
+                            currencySymbol: '$',
+                            decimalCharacter: ',',
+                            digitGroupSeparator: '.',
+                            decimalPlaces: 0
+                        }
+
+                        //this.autonumeric = new AutoNumeric(paymentInput);
+
+                        var cleave = new Cleave(paymentInput, {
+                            numeralDecimalScale: 0,
+                            delimiter: '.',
+                            prefix: '$',
+                            numeral: true,
+                            numeralThousandsGroupStyle: 'thousand'
+                        });
+                        
+                        paymentInput.addEventListener('change', () => {
+                            var curVal = paymentInput.value.replace('$', '').replace('.', '')
+                            const plainNumber = parseInt(curVal)
                             saldoInput.value = formatMoney(plainNumber - this.total + paidAmount)
                         })
-                        
+
+                        // paymentInput.addEventListener('keydown', (e) => {
+                        //     if (String.fromCharCode(e.keyCode).match(/\w+/)) {
+                        //         e.preventDefault()
+                        //     }
+                        // })
+
                         saveBtn.addEventListener('click', () => {
                             let plainNumber = parseInt(paymentInput.value.replace('$', '').replace('.', ''))
 
-                            if(plainNumber){
-                                if(plainNumber > this.total) plainNumber = this.total
-console.log('click this._doc', this._doc)
+                            if (plainNumber) {
+                                if (plainNumber > this.total) plainNumber = this.total
+                                console.log('click this._doc', this._doc)
                                 fireEvent(document, 'paymentAdded', {
                                     amount: plainNumber,
                                     orderForm: this,

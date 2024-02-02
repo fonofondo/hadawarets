@@ -50,13 +50,6 @@
                     	{"module": "pedidos", "name":"Pedido", "field": "rel_contacts_name.snpId"},
                     	{"module": "pagos", "name":"Pago", "field": "rel_contacts_name.snpId"}
                     ]
-                },
-                "discounts": {
-                    "label": "Descuentos",
-                    "type": "text",
-                    "grid": "20",
-                    "autocomp": "productos.name",
-                    "products_module": "productos"
                 }
             }
         },
@@ -261,11 +254,6 @@
                     "label": "Nombre del Producto",
                     "type": "text"
                 },
-                "IVA (%)": {
-                    "grid": "10",
-                    "label": "Iva",
-                    "type": "percent"
-                },
                 "notes": {
                     "grid": "10",
                     "label": "Notas",
@@ -311,11 +299,6 @@
                     "grid": "10",
                     "label": "Precio de Venta por Kg",
                     "type": "currency"
-                },
-                "fechadecaducidad": {
-                    "grid": "10",
-                    "label": "Fecha de Caducidad",
-                    "type": "date"
                 },
                 "notes": {
                     "grid": "10",

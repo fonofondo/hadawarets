@@ -58,6 +58,12 @@ class HadaDb {
             const documents = await dbdriver.getUnsyncedDocs(db, fromDate);
 
             if (documents.length) { flatDocList = flatDocList.concat(documents); }
+
+            db.close((err) => {
+                if (err) {
+                    console.error(err.message);
+                }
+            });
         }
 
         return flatDocList;
@@ -140,6 +146,12 @@ class HadaDb {
                         resolve(documents.map((doc) => doc.document_data));
                     }
                 });
+            });
+
+            moduleDb.close((err) => {
+                if (err) {
+                    console.error(err.message);
+                }
             });
         });
     }
@@ -227,9 +239,9 @@ class HadaDb {
     }
 
     public getDatabase(dbName: string) {
-        if (this.moduleDbs[dbName]) {
-            return this.moduleDbs[dbName];
-        }
+        // if (this.moduleDbs[dbName]) {
+        //     return this.moduleDbs[dbName];
+        // }
         const dbPath = path.join(__dirname, "..", "..", "..", "assets", this.appName, "db", `${dbName}.db`);
         const moduleDb = new Database(dbPath);
         this.moduleDbs[dbName] = moduleDb;

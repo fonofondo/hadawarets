@@ -33,12 +33,16 @@
         }
     </style>
     <div class="product-name"></div>
-    <div class="product-price"></div>
+    <div class="product-price">
+        <input type="currency" min="0" />
+    </div>
     <div class="product-qty">
-        <input type="number" min="1" />
+        <input type="number" min="0" />
         <div class="product-unit"></div>
     </div>
-    <div class="product-total"></div>
+    <div class="product-total">
+        <input type="currency" type="number" min="0" />
+    </div>
     <div class="product-delete">
         <snp-icon icon-name="times"></snp-icon>
     </div>
@@ -72,8 +76,8 @@
                 const productPrice = productInventory.price
 
                 this._shadowRoot.querySelector('.product-name').textContent = productInfo.name
-                this._shadowRoot.querySelector('.product-unit').textContent = productInfo.unit
-                this._shadowRoot.querySelector('.product-price').textContent = formatMoney(productPrice)
+                this._shadowRoot.querySelector('.product-unit input').value = productInfo.unit
+                this._shadowRoot.querySelector('.product-price input').value = formatMoney(productPrice)
                 this._shadowRoot.querySelector('.product-qty input').value = productInfo._qty
 
                 const totalElement = this._shadowRoot.querySelector('.product-total')

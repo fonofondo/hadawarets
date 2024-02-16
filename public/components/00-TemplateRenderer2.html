@@ -1,0 +1,169 @@
+<script>
+
+
+  class TemplateRenderer2 extends HTMLElement {
+    constructor(template = '') {
+      super();
+      this.attachShadow({ mode: 'open' });
+
+      this.template = `
+    <div id="myApp">
+      <div ng-controller="MyController">
+        ${template}
+      </div>
+    </div>
+    `;
+
+      this.mainElement = this.shadowRoot
+      this.scope = {}
+    }
+
+    init(fieldInfo) {
+      this.isInitted = true
+      this.fieldInfo = fieldInfo || {}
+      this.render()
+    }
+
+    render() {
+      this.mainElement.innerHTML = this.template
+
+      angular.module('myApp', []).controller('MyController', ['$scope', '$timeout', ($scope, $timeout) => {
+        this.updateScope = () => {
+          $timeout(() => {
+            $scope.$apply(() => {
+              Object.assign($scope, this.scope)
+            })
+          }, 0);
+        }
+
+        $scope.$watch(() => {
+          return Object.keys($scope).filter(key => !key.startsWith('$')).map(key => $scope[key]);
+        }, (newValues, oldValues) => {
+          if (this.onDataUpdated) this.onDataUpdated()
+        }, true);
+      }]);
+
+      // contenteditable
+      angular.module('myApp').directive('contenteditable', () => {
+        return {
+          require: 'ngModel',
+          link: (scope, element, attrs, ngModel) => {
+            function read() {
+              ngModel.$setViewValue(element.html());
+            }
+
+            ngModel.$render = function () {
+              element.html(ngModel.$viewValue || "");
+            };
+
+            element.bind('blur keyup', function () {
+              scope.$apply(read);
+            });
+          }
+        };
+      });
+
+      // currencyEditable
+      angular.module('myApp').directive('formatCurrency', ['$filter', ($filter) => {
+        return {
+          require: '?ngModel',
+          link: (scope, elem, attrs, ctrl) => {
+            if (!ctrl) return;
+
+            ctrl.$formatters.unshift((a) => {
+              var elemText = elem.text().replace(/[^\d\-]/g, '')
+
+              var plainNumber = elemText ? elemText :
+                ctrl.$modelValue ? new String(ctrl.$modelValue).replace(/[^\d\-]/g, '') : '';
+
+              if (plainNumber === '') {
+                return plainNumber
+              } else {
+                return $filter('currency')(ctrl.$modelValue, '$', 0)
+              }
+            });
+
+            ctrl.$parsers.unshift((viewValue) => {
+              var plainNumber = elem.text().replace(/[^\d\-]/g, '');
+
+              //elem.text($filter('currency')(plainNumber));
+              return plainNumber;
+            });
+
+
+
+            elem.bind('keyup', (() => {
+              
+              var cursorPosition = this.getCursorPosition(this.shadowRoot)
+              var hasSign = elem.text().startsWith('$')
+              var plainNumber = elem.text().replace(/[^\d\-]/g, '');
+              
+              if(plainNumber === '$') plainNumber = ''
+
+              if(!hasSign){
+                cursorPosition += 1
+              }
+
+              if(plainNumber !== ''){
+                var formattedNumber = $filter('currency')(plainNumber, '$', 0)
+                elem.text(formattedNumber)
+                this.setCursorPosition(this.shadowRoot, cursorPosition, elem[0]);
+              }else{
+                elem.text('')
+              }
+              
+            }).bind(this))
+          }
+        };
+      }]);
+
+      angular.bootstrap(this.mainElement.querySelector('#myApp'), ['myApp']);
+    }
+
+
+    getCursorPosition(shadowRoot) {
+      var selection = shadowRoot.getSelection();
+      return selection.anchorOffset ? selection.anchorOffset : 0;
+    }
+
+    setCursorPosition(shadowRoot, position, elementToFocus) {
+      var range = document.createRange();
+      var selection = shadowRoot.getSelection();
+      var textNode = elementToFocus.firstChild;
+
+      if (!textNode) {
+        textNode = document.createTextNode('');
+        elementToFocus.appendChild(textNode);
+      }
+
+      this.currentLength = textNode.length;
+      
+      if(this.prevLength){
+        var lengthDiff = this.currentLength - this.prevLength;
+        
+        if (lengthDiff == -2) {
+          position -= 1 
+        }
+
+        if (lengthDiff == 2) {
+          position += 1 
+        }
+      }
+
+      this.prevLength = this.currentLength
+
+      // Ensure position is not greater than the length of the text node
+      position = Math.min(position, textNode.length);
+
+      range.setStart(textNode, position);
+      range.setEnd(textNode, position);
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Focus the element
+      elementToFocus.focus();
+    }
+
+  }
+</script>

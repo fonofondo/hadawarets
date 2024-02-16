@@ -54,9 +54,16 @@
                 })
 
                 if (this.fieldInfo.autocomp) {
-                    document.addEventListener('autocompEntryClicked', (e) => {
+                    this.bindedAutocompoCallback = (e) => {
                         this.onAutocomp(e)
-                    })
+                    }
+                    document.addEventListener('autocompEntryClicked', this.bindedAutocompoCallback)
+                }
+            }
+
+            disconnectedCallback() {
+                if(this.bindedAutocompoCallback){
+                    document.removeEventListener('autocompEntryClicked', this.bindedAutocompoCallback)
                 }
             }
 
@@ -71,6 +78,7 @@
             }
 
             onAutocomp(e) {
+                console.log('onAutocomp')
                 if (this == e.detail.field) {
                     const doc = e.detail.doc
                     const autocompField = this.fieldInfo.autocomp.split('.')[1]

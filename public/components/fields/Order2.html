@@ -1,0 +1,315 @@
+<script type="text/template" id="my-component-template">
+  <style>
+    th {
+        padding: 0.3em;
+        vertical-align: middle;
+        text-align: center;
+        font-weight: bold;
+        border-bottom: 2px solid var(--snp-foreground-alpha2);
+        border-right: 1px solid var(--snp-foreground-alpha2);
+        font-size: small;
+    }
+
+    tbody tr:nth-child(even) td {
+        background-color: var(--snp-foreground-alpha05);
+    }
+
+    tbody tr:nth-child(odd) td {
+      border-right: 1px solid var(--snp-foreground-alpha2);
+    }
+    
+    input,
+    div[contenteditable]{
+      width: 100%;
+      border: none;
+      background: transparent;
+      outline: none;
+      text-align: right;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .subtotal,
+    .overriden-subtotal,
+    .finalTotal{
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .overriden-subtotal{
+      font-size: small;
+    }
+
+    .overriden-subtotal div{
+      font-size: small;
+      color: red;
+    }
+
+    tfoot td{
+      border-top: 3px solid black;
+    }
+
+    .boxed{
+      border: 3px solid black;
+      font-size: large;
+      padding: 3px;
+    }
+
+    .payment-form{
+        padding: 5em 8em 8em 8em;
+        background-color: var(--snp-background-color);
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        max-width: 500px;
+        min-width: 300px;
+        height: 300px;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        border-radius: var(--snp-normal-radius);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0.5em 0.5em 4em 4px var(--snp-shadow-color);
+    }
+    .payment-form input{
+        padding: 0.5em;
+        font-size: 2em;
+        border: 1px solid var(--snp-foreground-alpha5);
+    }
+    .payment-form button{
+        font-size: 1.5em;
+        padding: 0.5em;
+    }
+  </style>
+  <link rel="stylesheet" href="css/vendor/fontawesome/css/all.min.css" />
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Precio Unidad</th>
+        <th>Cantidad</th>
+        <th>Subtotal</th>
+        <th>Precio Final</th>
+        <th>Peso Final (Kg)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each products}}
+      <tr>
+        <td>{{name}}</td>
+        <td><div contenteditable="true" value={{price}} /></td>
+        <td><div contenteditable="true" value="{{_qty}}"  /></td>
+        <td><div contenteditable="true" value="{{subtotal}}"  /></td>
+        <td><div contenteditable="true" value="{{finalPrice}}"  /></td>
+        <td><div contenteditable="true" value="{{finalWeight}}"  /></td>
+        <td><button on-click="removeProduct(id)"><snp-icon icon-name="times"></snp-icon></button></td>
+      </tr>
+      {{/each}}
+    
+    </tbody>
+    <tfoot>
+      <tr>
+        <td><snp-input-rel /></td>
+        <td></td>
+        <td></td>
+        <td class="{{subtotal == finalTotal ? 'subtotal boxed' : 'overriden-subtotal' }}">
+          {{subtotal}}
+          {{#if subtotal != finalTotal}}
+            <div class="total-difference">
+              ({{finalTotal - subtotal}})
+            </div>
+          {{/if}}
+        </td>
+        <td class="{{subtotal != finalTotal ? 'finalTotal boxed' : ''}}">
+          {{#if subtotal != finalTotal}}
+            {{finalTotal}}
+          {{/if}}
+        </td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <div style="text-align: right; margin-top: 1em;">
+    <button type="button" on-click="addPaymentClickHandler()">Agregar Pago</button>
+  </div>
+  
+  {{#if isAddingPayments}}
+    <div class="payment-form form-container">
+      <div 
+        on-click="closeAddPaymentForm()"
+        style="
+          position: absolute;
+          top: 1em;
+          right: 1em;
+          font-size: 2em;
+          cursor: pointer;
+      "><i class="fa fa-times closer"></i></div>
+
+      <div style="
+          font-size: 2em;
+          margin-bottom: 1em;
+          color: var(--snp-primary-shade-color);
+      ">Ingresar Pago</div>
+
+      <div style="
+          font-size: 1.5em;
+          padding-bottom: 1em;
+      ">TOTAL: <span id="payment-form-total" style="
+          font-size: 1.5em;
+      ">{{finalTotal}}</span></div>
+
+      Efectivo:
+      <div><div contenteditable="true" value="{{paymentInput}}" /></div>
+      <br>
+      Cambio:
+      <div><div style="color: {{ paymentInput - finalTotal > 0 ? 'green' : 'red'}}" >{{paymentInput - finalTotal}}</div></div>
+      <br>
+      <button type="button" on-click="savePayment()">Guardar</button>
+  </div>
+  {{/if}}
+</script>
+
+<script>
+
+  const templateContent = document.getElementById('my-component-template').innerHTML;
+
+  class MyComponent extends TemplateRenderer {
+
+    constructor() {
+      super(templateContent);
+    }
+
+    removeProduct(productId) {
+      for(const product of this.data.products){
+        if(product.id == productId){
+          const productIndex = this.data.products.indexOf(product)
+          this.data.products = this.data.products.toSpliced(productIndex, 1)
+        }
+      }
+    }
+
+    get value(){
+      return JSON.parse(JSON.stringify(this.data))
+    }
+
+    get textValue(){
+      return this.data.products.length + ' Productos'
+    }
+
+    set doc(newDoc) {
+
+        this.data = newDoc[this.fieldInfo.fieldKey] || {}
+        this.addDataEvents()
+    }
+
+    init(fieldInfo){
+      this.fieldInfo = fieldInfo
+    }
+
+    addDataEvents(){
+      this.data.removeProduct = this.removeProduct.bind(this)
+
+      this.data.addPaymentClickHandler = (()=>{
+        this.data.isAddingPayments = true
+        this.updateData()
+      }).bind(this)
+
+      this.data.closeAddPaymentForm = (()=>{
+        this.data.isAddingPayments = false
+        //this.data.paymentInput = 0
+      }).bind(this)
+
+      //this.data.paymentInput = 0
+      this.data.savePayment = (() => {
+        console.log('savePayment', this.data)
+        if (this.data.paymentInput) {
+            let plainNumber = this.data.paymentInput
+            if (plainNumber > finalTotal) plainNumber = finalTotal
+            console.log('click this._doc', this._doc)
+            fireEvent(document, 'paymentAdded', {
+                amount: plainNumber,
+                orderForm: this,
+                doc: this.data
+            })
+            this.data.closeAddPaymentForm()
+        }
+      }).bind(this)
+    }
+
+    connectedCallback() {
+      this.addDataEvents()
+      this.data.products = []
+
+      const inputRel = this.mainElement.querySelector('snp-input-rel')
+      inputRel.init({
+        autocomp: "productos.name"
+      })
+      inputRel.onAutocomp = this.onProductAutocomp.bind(this)
+    }
+
+    onDataUpdated() {
+      let subtotal = 0
+      let finalTotal = 0
+
+      for(const p in this.data.products){
+        const productSubtotal = this.data.products[p].price * this.data.products[p]._qty
+        const productFinalPrice = parseInt(this.data.products[p].finalPrice)
+        this.data.products[p].subtotal = productSubtotal
+        subtotal += productSubtotal
+        finalTotal += productFinalPrice ? productFinalPrice : productSubtotal
+      }
+
+      this.data.subtotal = subtotal
+      this.data.finalTotal = finalTotal
+    }
+
+    async onProductAutocomp(e) {
+      if(e.detail.doc.snptype != 'productos') return;
+
+      const field = e.detail.field
+      const productDoc = e.detail.doc
+
+      if (!this.isProductAdded(productDoc)) {
+
+        productDoc._qty = 1
+        const inventory = await this.getProductInventory(productDoc)
+        productDoc.subtotal = productDoc._qty * inventory.price
+        productDoc.finalPrice = ''
+        productDoc.finalWeight = ''
+        productDoc.inventory = inventory
+        productDoc.price = inventory.price
+        this.data.products = [...this.data.products, productDoc]
+      }
+    }
+
+    isProductAdded(product) {
+      for (let existingProduct of this.data.products) {
+        if (existingProduct.snpId == product.snpId) {
+          alert('El producto "' + product.name + '" ya está en la lista');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    async getProductInventory(productInfo) {
+      const inventoryProducts = await snpdb.find({
+        snptype: 'inventory',
+        live: false,
+        orderer: 'date_created',
+        order: "ASC",
+        filters: {
+          'rel_productos.snpId': productInfo.snpId,
+        }
+      })
+
+      const product = inventoryProducts.docs[0]
+
+      return product
+    }
+  }
+
+  customElements.define('snp-input-order2', MyComponent);
+</script>

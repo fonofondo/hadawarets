@@ -78,9 +78,15 @@
                     "grid": "20",
                     "required": 1
                 },
+                "rel_users_name": {
+                    "autocomp": "users.name",
+                    "label": "Vendedor",
+                    "type": "rel",
+                    "grid": "20"
+                },
                 "matrix_productos": {
                     "label": "Productos",
-                    "type": "order",
+                    "type": "order3",
                     "grid": "20",
                     "autocomp": "productos.name",
                     "products_module": "productos"

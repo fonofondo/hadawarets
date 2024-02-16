@@ -1,0 +1,167 @@
+<script>
+
+class TemplateRenderer extends HTMLElement {
+  constructor(template = '') {
+    super();
+    this.attachShadow({ mode: 'open' });
+
+    this.template = template;
+    //this.bindedProxyHandler = this.proxyHandler.bind(this)
+    this.data = {} //this.createDeepProxy({}, this.bindedProxyHandler)
+    //this.deboucedUpdate = this.debounce(this.updateData.bind(this), 100)
+    this.mainElement = this.shadowRoot
+  }
+
+  // proxyHandler(target, property, value) {
+  //   console.log('proxyHandler', target, property, value)
+  //   const isFunction = typeof value == 'function'
+  //   const isSameValue = JSON.stringify(target[property]) === JSON.stringify(value)
+    
+  //   if (!isFunction && isSameValue) return true;
+
+  //   if(this.proxies.has(value)){
+  //     target[property] = value
+  //     return true;
+  //   }
+
+  //   if(isFunction && target[property] != value){
+  //     target[property] = value
+  //   }else if(this.proxies.has(value)){
+  //     target[property] = value
+  //   }else{
+  //     target[property] = this.createDeepProxy(value, this.bindedProxyHandler)
+  //   }
+
+  //   this.deboucedUpdate();
+  //   return true
+  // }
+
+  init(fieldInfo) {
+    this.fieldInfo = fieldInfo
+    this.render()
+    //this.updateData()
+  }
+
+  // updateData() {
+  //   // const isSameValue = JSON.stringify(this.data) === JSON.stringify(this.reactive.data)
+  //   // if(isSameValue){
+  //   //   console.log('isSameValue', this.data, this.oldData)
+  //   //   return
+  //   // }
+
+  //   console.log('updateData')
+
+  //   // this.oldData = this.data
+
+  //   if(this.reactive) this.reactive.set(this.data)
+  //   if(this.onDataUpdated) this.onDataUpdated()
+  // }
+
+  render() {
+    this.mainElement.innerHTML = this.template
+
+    angular.module('myApp', [])
+      .controller('MyController', ['$scope', function ($scope) {
+        $scope.greetMe = 'World';
+      }]);
+
+    angular.element(function() {
+      angular.bootstrap(this.mainElement, ['myApp']);
+    });
+
+    // //this.freshData = { ...this.data }
+    // this.reactive = new Ractive({
+    //   target: this.mainElement,
+    //   template: this.template,
+    //   data: this.data
+    // });
+
+    // this.reactive.observe("**", (newValue, oldValue, keypath)=>{
+    //   console.log('reacting....')
+
+    //   // if(!this.deboucedNotify) {
+    //   //   this.deboucedNotify = this.debounce(()=>{
+    //   //     this.updateData()
+    //   //   }, 100)
+    //   // }
+      
+    //   this.updateData()
+    // })
+  }
+
+  // createDeepProxy(obj, handler) {
+  //   if (typeof obj !== 'object') {
+  //     return obj
+  //   }
+
+  //   for (let prop in obj) {
+  //     let value = obj[prop]
+
+  //     if (Array.isArray(value)) {
+  //       value = value.map(item => {
+  //         if (typeof item === 'object' && item !== null) {
+  //           return this.createDeepProxy(item, handler);
+  //         } else {
+  //           return item
+  //         }
+  //       });
+  //     } else if (typeof value === 'object' && value !== null) {
+  //       value = this.createDeepProxy(value, handler);
+  //     }
+
+  //     obj[prop] = value
+  //   }
+
+  //   if(!obj || typeof obj != 'object') return obj
+    
+  //   const proxy = new Proxy(obj, {
+  //     set: handler, 
+  //     // get: (target, prop, receiver) => {
+  //     //   if (typeof target[prop] == 'function') {
+  //     //     return target[prop];
+  //     //   }
+  //     //   if(target[prop]){
+  //     //     return JSON.parse(JSON.stringify(target[prop]));
+  //     //   }
+  //     //   return null
+  //     // }
+  //   });
+
+  //   if(!this.proxies) this.proxies = new WeakSet();
+
+  //   this.proxies.add(proxy);
+
+  //   return proxy
+  // }
+
+
+
+
+  // getFreshProperty(target, freshData) {
+  //   let result;
+  //   function recursiveSearch(target, freshData) {
+      
+  //     for (let key in freshData) {
+  //       if (freshData[key] === target) {
+  //         result = freshData;
+  //         return;
+  //       } else if (typeof freshData[key] === 'object' && freshData[key] !== null) {
+  //         recursiveSearch(target, freshData[key]);
+  //       }
+  //     }
+  //   }
+  //   recursiveSearch(target, freshData);
+  //   return result;
+  // }
+
+  debounce(func, delay) {
+    let debounceTimer;
+    return function () {
+      const context = this;
+      const args = arguments;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => func.apply(context, args), delay);
+    }
+  }
+}
+</script>

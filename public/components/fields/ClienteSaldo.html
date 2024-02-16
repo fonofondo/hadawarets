@@ -24,16 +24,18 @@
                     }
                 })
 
+                console.log('pedidos', pedidos, clientDoc)
+
                 let saldo = 0
                 for(var pedido of pedidos.docs){
-                    saldo -= pedido.matrix_productos.total
 
-                    if(pedido.pagos_history){
-                        for(var pago of pedido.pagos_history){
-                            saldo += pago.suma
-                        }
-                    }
+                    const prodTotal = pedido.matrix_productos.finalTotal || pedido.matrix_productos.subtotal
+                    saldo -= parseInt(prodTotal)
+                    saldo += parseInt(pedido.matrix_productos.paid)
+
+                    
                 }
+                
                 return saldo
             }
 
@@ -42,7 +44,7 @@
                 this.wrap.querySelector(".input").remove()
                 this.wrap.prepend(template.content.cloneNode(true));
                 this.inputElement = this.wrap.querySelector(".input")
-                this.saldo = ''
+                this.saldo = 0
             }
 
             init(fieldInfo) {
@@ -55,7 +57,11 @@
             }
 
             get textValue() {
-                return formatMoney(this._doc.saldo)
+                return new Promise((resolve)=>{
+                    var saldo = parseInt(this._doc.saldo)
+                    var html = `<span style="font-weight: bold; font-family: monospace; color: ${saldo >= 0 ? 'green' : 'red'}">${formatMoney(saldo)}</span>`
+                    resolve(html) 
+                })
             }
 
             set doc(newDoc) {
@@ -66,8 +72,6 @@
                     this.inputElement.value = formatMoney(saldo)
                 })
             }
-
-            
         }
 
         globalThis.SnpClienteSaldoInput = SnpClienteSaldoInput

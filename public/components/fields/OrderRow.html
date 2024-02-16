@@ -12,6 +12,21 @@
 
         .product-qty {
             white-space: nowrap;
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            outline: none;
+        }
+
+        .input{
+            display: block;
+            border: none;
+            outline: none;
+            text-align: right;
         }
 
         .product-qty input {
@@ -34,14 +49,20 @@
     </style>
     <div class="product-name"></div>
     <div class="product-price">
-        <input type="currency" min="0" />
+        <div contenteditable="true" class="input" ></div>
     </div>
     <div class="product-qty">
         <input type="number" min="0" />
         <div class="product-unit"></div>
     </div>
     <div class="product-total">
-        <input type="currency" type="number" min="0" />
+        <div contenteditable="true" class="input" ></div>
+    </div>
+    <div class="product-final-price">
+        <div contenteditable="true" class="input" ></div>
+    </div>
+    <div class="product-final-weight">
+        <div contenteditable="true" class="input" ></div>
     </div>
     <div class="product-delete">
         <snp-icon icon-name="times"></snp-icon>
@@ -62,7 +83,13 @@
             }
 
             get value() {
-                return parseInt(this._shadowRoot.querySelector('.product-total').textContent.replace(/(\.|\,|\$)/g, ''))
+                const subtotal = parseInt(this._shadowRoot.querySelector('.product-total .input').textContent.replace(/[^\d]/g, ''))
+                return subtotal
+            }
+
+            get finalvalue() {
+                const finalPrice = parseInt(this._shadowRoot.querySelector('.product-final-price .input').textContent.replace(/[^\d]/g, ''))
+                return finalPrice
             }
 
             async init(productInfo, order) {
@@ -73,27 +100,125 @@
                     
                 }
                
-                const productPrice = productInventory.price
+                const productPrice = productInfo.unitPrice ? productInfo.unitPrice : productInventory.price
+                const priceInput = this._shadowRoot.querySelector('.product-price .input')
+                const finalPriceInput = this._shadowRoot.querySelector('.product-final-price .input')
+                const finalWeightInput = this._shadowRoot.querySelector('.product-final-weight .input')
+                const qtyInput = this._shadowRoot.querySelector('.product-qty input')
+
+                finalWeightInput.textContent = productInfo.finalWeight
+                finalPriceInput.textContent = productInfo.finalPrice
+                
 
                 this._shadowRoot.querySelector('.product-name').textContent = productInfo.name
-                this._shadowRoot.querySelector('.product-unit input').value = productInfo.unit
-                this._shadowRoot.querySelector('.product-price input').value = formatMoney(productPrice)
-                this._shadowRoot.querySelector('.product-qty input').value = productInfo._qty
+                this._shadowRoot.querySelector('.product-unit').textContent = productInfo.unit
 
-                const totalElement = this._shadowRoot.querySelector('.product-total')
-                totalElement.textContent = formatMoney(parseInt(productPrice) * parseInt(productInfo._qty))
+                priceInput.textContent = productPrice
+                qtyInput.value = productInfo._qty
+
+                const totalInput = this._shadowRoot.querySelector('.product-total .input')
+                totalInput.textContent = parseInt(productPrice) * parseInt(productInfo._qty)
+
+                // priceInput.cleave = new Cleave(priceInput, {
+                //     numeralDecimalScale: 0,
+                //     prefix: '$',
+                //     numeral: true,
+                //     numeralThousandsGroupStyle: 'thousand'
+                // });
+
+                // totalInput.cleave = new Cleave(totalInput, {
+                //     numeralDecimalScale: 0,
+                //     prefix: '$',
+                //     numeral: true,
+                //     numeralIntegerScale: 20,
+                //     numeralThousandsGroupStyle: 'thousand'
+                // });
+
+                const updateOrder = () => {
+                    this._qty = qtyInput.value
+                    this.unitPrice = priceInput.textContent.replaceAll(/[^\d]/g, '')
+                    this.subtotal = totalInput.textContent.replaceAll(/[^\d]/g, '')
+
+                    this.finalPrice = finalPriceInput.textContent.replaceAll(/[^\d]/g, '')
+                    this.finalWeight = finalWeightInput.textContent.replaceAll(/[^\d]/g, '')
+
+                    fireEvent(document, 'orderProductChange', { 
+                        product: productInfo, 
+                        order: order, 
+                        qty: this._qty,
+                        unitPrice: this.unitPrice,
+                        finalPrice: this.finalPrice,
+                        finalWeight: this.finalWeight,
+                        subtotal: this.subtotal
+                    })
+                }
 
 
-                this._shadowRoot.querySelector('.product-qty input').addEventListener('change', () => {
-                    this._qty = parseInt(this._shadowRoot.querySelector('.product-qty input').value)
-                    totalElement.textContent = parseInt(productPrice) * this._qty
-                    fireEvent(document, 'orderProductQtyChange', { product: productInfo, order: order, qty: this._qty })
+                qtyInput.addEventListener('change', () => {
+                    updateOrder()
                 })
+
+                // priceInput.addEventListener('keyup', () => {
+                //     priceInput.textContent = priceInput.textContent.replaceAll(/[^\d]/g, '');
+                // })
+
+
+                priceInput.addEventListener('blur', () => {
+                    const price = parseInt(priceInput.textContent.replaceAll(/[^\d]/g, ''));
+
+                    if(price == this.oldPrice){
+                        return
+                    }
+
+                    this.oldPrice = price
+
+                    const qty = parseInt(this._shadowRoot.querySelector('.product-qty input').value)
+
+                    totalInput.textContent = price * qty
+
+                    priceInput.width = 'auto';
+                    priceInput.width = priceInput.scrollWidth + 'px';
+
+                    updateOrder()
+                })
+
+                // totalInput.addEventListener('keyup', () => {
+                //     totalInput.textContent = totalInput.textContent.replaceAll(/[^\d]/g, '');
+                // })
+
+                totalInput.addEventListener('blur', () => {
+
+                    const subtotal = parseInt(totalInput.textContent.replaceAll(/[^\d]/g, ''));
+                    const qty = parseInt(this._shadowRoot.querySelector('.product-qty input').value)
+                    const total = subtotal / qty
+
+                    if(total == this.oldTotal){
+                        return
+                    }
+
+                    this.oldTotal = total
+
+                    priceInput.textContent = total
+
+                    updateOrder()
+                })
+
+                finalWeightInput.addEventListener('blur', () => {
+                    updateOrder()
+                })
+
+                finalPriceInput.addEventListener('blur', () => {
+                    updateOrder()
+                })
+
+
                 this._shadowRoot.querySelector('.product-delete').addEventListener('click', () => {
                     this.parentElement.removeChild(this)
                     fireEvent(document, 'orderProductDeleted', { product: productInfo, order: order })
                 })
             }
+
+            
 
             async getProductInventory(productInfo){
                 const inventoryProducts = await snpdb.find({

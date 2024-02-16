@@ -1,0 +1,397 @@
+<script type="text/template" id="my-component-template3">
+    <style>
+        th {
+            padding: 0.3em;
+            vertical-align: middle;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--snp-foreground-alpha2);
+            border-right: 1px solid var(--snp-foreground-alpha2);
+            font-size: small;
+        }
+    
+        tbody tr:nth-child(even) td {
+            background-color: var(--snp-foreground-alpha05);
+        }
+    
+        tbody tr:nth-child(odd) td {
+          border-right: 1px solid var(--snp-foreground-alpha2);
+        }
+        
+        input,
+        div[contenteditable]{
+          width: 100%;
+          border: none;
+          background: transparent;
+          outline: none;
+          text-align: right;
+          padding: 0.4em;
+          box-sizing: border-box;
+          box-shadow: inset 1px 2px 7px 0px #00000024;
+          border-radius: 3px;
+          font-family: monospace;
+        }
+    
+        .subtotal,
+        .overriden-subtotal,
+        .finalTotal{
+          text-align: right;
+          font-weight: bold;
+        }
+    
+        .overriden-subtotal{
+          font-size: small;
+        }
+    
+        .overriden-subtotal div{
+          font-size: small;
+          /* color: red; */
+        }
+
+        .overriden-subtotal .subtotal{
+          text-decoration: line-through;
+          color: #666;
+        }
+    
+        tfoot td{
+          border-top: 3px solid black;
+        }
+    
+        .boxed{
+          /* border: 3px solid black; */
+          font-size: 1.2em;
+          padding: 0.2em;
+          box-shadow: 1px 1px 6px 1px #0000008a;
+        }
+    
+        .payment-form{
+            padding: 5em 8em 8em 8em;
+            background-color: var(--snp-background-color);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            max-width: 500px;
+            min-width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            border-radius: var(--snp-normal-radius);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0.5em 0.5em 4em 4px var(--snp-shadow-color);
+        }
+        .payment-form [contenteditable]{
+            padding: 0.5em;
+            font-size: 2em;
+            border: 1px solid var(--snp-foreground-alpha5);
+        }
+        .payment-form button{
+            font-size: 1.5em;
+            padding: 0.5em;
+        }
+        .monospaced {
+            font-family: monospace;
+        }
+        .qty{
+          text-align: center !important;
+        }
+      </style>
+      <link rel="stylesheet" href="css/vendor/fontawesome/css/all.min.css" />
+      
+      <table style="font-size: 1.2em">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio Unidad</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+            <th>Precio Final</th>
+            <th>Peso Final (Kg)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="product in matrix_productos.products">
+            <td style="
+                font-size: 0.9em;
+                padding: 0.2em;
+            ">{{product.name}}</td>
+            <td><div contenteditable="true" ng-model="product.price" format-currency></div></td>
+            <td><div class="qty" contenteditable="true" ng-model="product._qty"  ></div></td>
+            <td><div class="monospaced" style="text-align: right">{{product.subtotal |currency:$:0}}</div></td>
+            <td><div ng-style="{'color': (product.finalPrice > product.subtotal) ? 'green' : 'red'}" contenteditable="true" ng-model="product.finalPrice"  format-currency /></td>
+            <td><div contenteditable="true" ng-model="product.finalWeight"  /></td>
+            <td><button ng-click="removeProduct(product.id)"><snp-icon icon-name="times"></snp-icon></button></td>
+          </tr>
+        
+        </tbody>
+        <tfoot>
+          <tr>
+            <td><snp-input-rel /></td>
+            <td></td>
+            <td style="font-weight: bold;">TOTAL: </td>
+            <td class="{{matrix_productos.finalTotal && matrix_productos.subtotal != finalTotal ? 'overriden-subtotal' : 'subtotal boxed' }} monospaced">
+            <div class="subtotal">{{matrix_productos.subtotal |currency:$:0}}</div>
+            <div ng-if="matrix_productos.finalTotal && matrix_productos.subtotal != finalTotal" 
+              class="total-difference monospaced" 
+              ng-style="{'color': (matrix_productos.finalTotal - matrix_productos.subtotal >= 0) ? 'green' : 'red'}">
+                ({{matrix_productos.finalTotal - matrix_productos.subtotal |currency:$:0}})
+            </div>
+            </td>
+            <td class="{{matrix_productos.finalTotal && matrix_productos.subtotal != matrix_productos.finalTotal ? 'finalTotal boxed' : ''}} monospaced">
+              <span ng-if="matrix_productos.finalTotal && matrix_productos.subtotal != matrix_productos.finalTotal">
+                {{matrix_productos.finalTotal |currency:$:0}}
+              </span>
+            </td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="text-align: right; margin-top: 1em;">
+        <button style="
+            font-size: 1.2em;
+            padding: 0.5em;"
+            type="button" ng-click="addPaymentClickHandler()">Agregar Pago</button>
+      </div>
+      
+        <div ng-style="{display: matrix_productos.isAddingPayments ? 'block' : 'none'}" class="payment-form form-container">
+          <div 
+          ng-click="closeAddPaymentForm()"
+            style="
+              position: absolute;
+              top: 1em;
+              right: 1em;
+              font-size: 2em;
+              cursor: pointer;
+          "><i class="fa fa-times closer"></i></div>
+    
+          <div style="
+              font-size: 2em;
+              margin-bottom: 1em;
+              color: var(--snp-primary-shade-color);
+          ">Ingresar Pago</div>
+    
+          <div style="
+                font-size: 1.5em;
+                padding-bottom: 1em;
+            ">TOTAL: 
+              <span id="payment-form-total" class="monospaced" style="
+                font-size: 1.5em;
+            ">{{(matrix_productos.finalTotal || matrix_productos.subtotal) | currency:$:0}}</span>
+            <span ng-if="matrix_productos.paid" class="monospaced"><br>Pagado: {{ matrix_productos.paid | currency:$:0}}</span>
+          </div>
+    
+          Efectivo:
+          <div><div contenteditable="true" ng-model="matrix_productos.paymentInput" format-currency></div></div>
+          <br>
+          Cambio:
+          <div><div class="monospaced" style="color: {{ matrix_productos.paymentInput - finalTotal > 0 ? 'green' : 'red'}}; 
+            font-size: 2em;
+            text-align: right;
+            border: 1px solid;
+            padding: 0.5em;" >{{(matrix_productos.paymentInput - (matrix_productos.finalTotal || matrix_productos.subtotal)) + matrix_productos.paid | currency:$:0}}</div></div>
+          <br>
+          <button type="button" ng-click="savePayment()">Guardar</button>
+      </div>
+  </script>
+
+<script>
+
+    const templateContent3 = document.getElementById('my-component-template3').innerHTML;
+
+    class MyComponent3 extends TemplateRenderer2 {
+        constructor() {
+            super(templateContent3);
+        }
+
+        get value() {
+            
+            return this.scope.matrix_productos
+        }
+
+        get textValue() {
+
+            if(this.scope){
+                return this.scope.matrix_productos.products.length + ' productos'
+            }else if(this._doc){
+                return this._doc.matrix_productos.products.length + ' productos'
+            }else{
+                return ''
+            }
+        }
+
+        init(fieldInfo) {
+            super.render(fieldInfo)
+
+            if (this._doc) {
+                Object.assign(this.scope, this._doc)
+                this.updateScope()
+            } else {
+                this.scope = {}
+            }
+
+            if (this.updateScope) this.updateScope()
+        }
+
+        set doc(newDoc) {
+            this._doc = newDoc
+            Object.assign(this.scope, this._doc)
+
+            if (this.updateScope) this.updateScope()
+        }
+
+        onDataUpdated() {
+            let subtotal = 0
+            let finalTotal = 0
+
+            
+
+            if (!this.scope || !('matrix_productos' in this.scope)) {
+                return
+            }
+
+            const products = this.scope.matrix_productos.products
+
+            for (const p in products) {
+
+                const productSubtotal = products[p].price * products[p]._qty
+                const productFinalPrice = parseInt(products[p].finalPrice)
+
+                products[p].subtotal = productSubtotal
+
+                subtotal += productSubtotal
+
+                finalTotal += productFinalPrice ? productFinalPrice : productSubtotal
+
+            }
+
+            this.scope.matrix_productos.subtotal = subtotal
+            this.scope.matrix_productos.finalTotal = finalTotal && finalTotal != subtotal ? finalTotal : ''
+
+            this.scope.matrix_productos.paid = 0
+
+            if(this.scope.pagos_history){
+              for(const payment of this.scope.pagos_history){
+                this.scope.matrix_productos.paid += parseInt(payment.suma);
+              }
+            }
+            
+            this.updateScope()
+        }
+
+        removeProduct(productId) {
+            for (const product of this.scope.matrix_productos.products) {
+                if (product.id == productId) {
+                    const productIndex = this.scope.matrix_productos.products.indexOf(product)
+                    this.scope.matrix_productos.products = this.scope.matrix_productos.products.toSpliced(productIndex, 1)
+                }
+            }
+
+            this.updateScope()
+        }
+
+        connectedCallback() {
+            const inputRel = this.mainElement.querySelector('snp-input-rel')
+            inputRel.init({
+                autocomp: "productos.name"
+            })
+            inputRel.onAutocomp = this.onProductAutocomp.bind(this)
+
+            //
+            if(typeof this.scope.matrix_productos != 'object'){
+                this.scope.matrix_productos = {}
+            }
+
+            if(!Array.isArray(this.scope.matrix_productos.products)){
+                this.scope.matrix_productos.products = []
+            }
+
+            this.addScopeEvents()
+        }
+
+        addScopeEvents() {
+            this.scope.removeProduct = this.removeProduct.bind(this)
+
+            this.scope.addPaymentClickHandler = (()=>{
+                this.scope.matrix_productos.paymentInput = 0
+                this.scope.matrix_productos.isAddingPayments = true
+                this.updateScope()
+            }).bind(this)
+
+            this.scope.closeAddPaymentForm = (()=>{
+                this.scope.matrix_productos.isAddingPayments = false
+                this.updateScope()
+            }).bind(this)
+            
+            this.scope.savePayment = (() => {
+                if (this.scope.matrix_productos.paymentInput) {
+                    let plainNumber = this.scope.matrix_productos.paymentInput
+                    let finalTotal = this.scope.matrix_productos.finalTotal || this.scope.matrix_productos.subtotal
+                    if (plainNumber > finalTotal) plainNumber = finalTotal
+                    
+                    fireEvent(document, 'paymentAdded', {
+                        amount: plainNumber,
+                        orderForm: this,
+                        doc: this.scope
+                    })
+                    this.scope.closeAddPaymentForm()
+                }
+            }).bind(this)
+
+            this.updateScope()
+        }
+
+        async onProductAutocomp(e) {
+            
+            if (e.detail.doc.snptype != 'productos') return;
+
+            const field = e.detail.field
+            const productDoc = e.detail.doc
+
+            if (!this.isProductAdded(productDoc)) {
+
+                productDoc._qty = 1
+                const inventory = await this.getProductInventory(productDoc)
+                productDoc.subtotal = productDoc._qty * inventory.price
+                productDoc.finalPrice = ''
+                productDoc.finalWeight = ''
+                productDoc.inventory = inventory
+                productDoc.price = inventory.price
+                this.scope.matrix_productos.products.push(productDoc)
+            }
+            this.updateScope()
+        }
+
+        isProductAdded(product) {
+            if(!this.scope.matrix_productos.products){
+                return true;
+            }
+            for (let existingProduct of this.scope.matrix_productos.products) {
+                if (existingProduct.snpId == product.snpId) {
+                    alert('El producto "' + product.name + '" ya está en la lista');
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        async getProductInventory(productInfo) {
+            const inventoryProducts = await snpdb.find({
+                snptype: 'inventory',
+                live: false,
+                orderer: 'date_created',
+                order: "ASC",
+                filters: {
+                    'rel_productos.snpId': productInfo.snpId,
+                }
+            })
+
+            const product = inventoryProducts.docs[0]
+
+            return product
+        }
+    }
+
+    customElements.define('snp-input-order3', MyComponent3);
+</script>

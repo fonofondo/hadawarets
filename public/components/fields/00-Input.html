@@ -44,7 +44,7 @@
             this.fieldInfo = fieldInfo
             if (this.inputElement) {
                 this.inputElement.addEventListener('input', () => {
-                    this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
+                    if(this.fieldInfo.fieldKey) this._doc[this.fieldInfo.fieldKey] = this.inputElement.value
                 })
             }
         }

@@ -374,6 +374,9 @@ class SnpForageDbDriver {
 
             const db = this.getDb(newDoc.snptype)
 
+            // Make suer it's a POJO
+            newDoc = JSON.parse(JSON.stringify(newDoc));
+
             db.setItem(newDoc.snpId, newDoc).then(function (value) {
                 if (!silent) fireEvent(document, 'localSaveDoc', value)
                 resolve(value)

@@ -27,17 +27,17 @@
             padding: 0.3em;
         }
 
-        .total-row div:nth-child(3) {
+        .total-row div:nth-child(4) {
             text-align: right;
         }
 
-        .total-row div:nth-child(4) {
+        .total-row div:nth-child(6) {
             border: 1px solid var(--snp-foreground-alpha2);
             border-top: none;
             border-bottom: none;
         }
 
-        .total-row:last-child div:nth-child(4) {
+        .total-row:last-child div:nth-child(5) {
             border: 2px solid var(--snp-foreground-alpha4);
             text-align: right;
         }
@@ -81,14 +81,21 @@
                     }
                 })
 
-                document.addEventListener('orderProductQtyChange', (e) => {
-
+                document.addEventListener('orderProductChange', (e) => {
+                    
                     if (e.detail.order == this) {
 
                         Object.keys(this.relDocs).forEach((docKey) => {
+                           
                             if (e.detail.product.snpId == this.relDocs[docKey].snpId) {
-
+                                
                                 this.relDocs[docKey]._qty = e.detail.qty
+                                this.relDocs[docKey].unitPrice = e.detail.unitPrice
+                                this.relDocs[docKey].subtotal = e.detail.subtotal
+                                this.relDocs[docKey].finalWeight = e.detail.finalWeight
+                                this.relDocs[docKey].finalPrice = e.detail.finalPrice
+                                
+
                                 this._doc[this.fieldInfo.fieldKey] = {
                                     docs: this.relDocs
                                 }
@@ -164,6 +171,8 @@
                             <div>Precio<br />Unitario</div>
                             <div>Cantidad</div>
                             <div>Subtotal</div>
+                            <div>Precio Final</div>
+                            <div>Peso Final (Kg)</div>
                             <div></div>
                         </div>
                     `
@@ -200,9 +209,10 @@
                     const totalRow = document.createElement('div')
                     totalRow.classList.add('total-row')
                     totalRow.innerHTML = `
-                        <div></div>
-                        <div></div>
                         <div><strong>TOTAL</strong></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
                         <div><strong style="font-size: 1.2em;">${formatMoney(total)}</strong></div>
                         <div></div>`;
 
@@ -332,7 +342,7 @@
                             numeral: true,
                             numeralThousandsGroupStyle: 'thousand'
                         });
-                        
+
                         paymentInput.addEventListener('change', () => {
                             var curVal = paymentInput.value.replace('$', '').replace('.', '')
                             const plainNumber = parseInt(curVal)
@@ -350,7 +360,7 @@
 
                             if (plainNumber) {
                                 if (plainNumber > this.total) plainNumber = this.total
-                                console.log('click this._doc', this._doc)
+                                
                                 fireEvent(document, 'paymentAdded', {
                                     amount: plainNumber,
                                     orderForm: this,

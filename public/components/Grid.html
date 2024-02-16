@@ -393,11 +393,11 @@
                     }
                 })
 
-                window.addEventListener('focus', (e) => {
-                    if (this.moduleInfo.moduleKey == globalThis.snpCurrentModule) {
-                        this.updateData()
-                    }
-                });
+                // window.addEventListener('focus', (e) => {
+                //     if (this.moduleInfo.moduleKey == globalThis.snpCurrentModule) {
+                //         this.updateData()
+                //     }
+                // });
 
                 this.selectedDocs = {}
                 this.doubleClickTime = 300
@@ -581,7 +581,7 @@
                     }
 
                     const fieldData = this.moduleInfo.fields[fieldKey]
-                    const cellVal = this.getFieldValueHtml(rowData, fieldKey, fieldData)
+                    const cellVal = this.getFieldValueHtml(rowData, fieldKey, fieldData, cell)
 
                     cell.html(cellVal); //
                 });
@@ -597,22 +597,33 @@
             }
 
 
-            getFieldValueHtml(doc, fieldKey, fieldInfo) {
+            getFieldValueHtml(doc, fieldKey, fieldInfo, cell) {
+                
+                if (!doc[fieldKey]) {
+                    console.log('getFieldValueHtml', cell[0])
+                    return ''
+                }
 
-                if (!doc[fieldKey]) return ''
                 const tag = 'snp-input-' + fieldInfo.type
                 const inputElement = document.createElement(tag)
+                
                 if ('init' in inputElement) {
                     fieldInfo.fieldKey = fieldKey
                     inputElement.init(fieldInfo)
                     inputElement.doc = doc
+                    
                     var textValue = inputElement.textValue
+
                     if (textValue.replace
                         && fieldKey in this.filterElements
                         && this.filterElements[fieldKey].value) {
                         const filterVal = this.filterElements[fieldKey].value
                         const reg = new RegExp('(' + filterVal + ')', 'i')
                         textValue = textValue.replace(reg, '<b>$1</b>')
+                    }else if(textValue instanceof Promise){
+                        textValue.then((html)=>{
+                            cell.html(html)
+                        })
                     }
                     return textValue
                 }

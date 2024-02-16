@@ -42,7 +42,7 @@
                     })
 
                     this.field.inputElement.addEventListener("blur", (e) => {
-                        setTimeout(() => { this.hide() }, 200)
+                        //setTimeout(() => { this.hide() }, 200)
                     })
 
                     document.addEventListener("click", (e) => {
@@ -91,7 +91,7 @@
                 const fieldBox = this.field.wrap.getBoundingClientRect()
                 this.resultContainer.style.top = `${fieldBox.top + fieldBox.height}px`
                 this.resultContainer.style.left = `${fieldBox.left}px`
-                this.resultContainer.style.width = `${fieldBox.width}px`
+                this.resultContainer.style.width = `max-content`
 
                 this.show()
 
